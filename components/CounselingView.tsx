@@ -8,7 +8,11 @@ import {
 } from 'lucide-react';
 import { CounselingRecord } from '../types';
 
-const CounselingView: React.FC = () => {
+interface CounselingViewProps {
+  activeBranchId: string;
+}
+
+const CounselingView: React.FC<CounselingViewProps> = ({ activeBranchId }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -17,6 +21,7 @@ const CounselingView: React.FC = () => {
   const [records, setRecords] = useState<CounselingRecord[]>([
     { 
       id: '1', 
+      branchId: activeBranchId,
       personName: 'Robert Wilson', 
       problem: 'Struggling with work-life balance and anxiety over family relocation.', 
       solution: 'Provided scriptural guidance on peace (Phil 4:6-7). Recommended professional career counseling alongside spiritual mentorship.', 
@@ -26,6 +31,7 @@ const CounselingView: React.FC = () => {
     },
     { 
       id: '2', 
+      branchId: activeBranchId,
       personName: 'Sarah Connor', 
       problem: 'Grief after the loss of a close relative.', 
       solution: 'Joined the Grief Support Group. Assigned a deaconess for weekly prayer calls.', 
@@ -35,6 +41,7 @@ const CounselingView: React.FC = () => {
     },
     { 
       id: '3', 
+      branchId: activeBranchId,
       personName: 'Michael Jordan', 
       problem: 'Conflict resolution within the Youth Ministry team.', 
       solution: 'Facilitated a mediation session. Set new communication protocols for the department.', 
@@ -48,7 +55,7 @@ const CounselingView: React.FC = () => {
     personName: '', 
     problem: '', 
     solution: '', 
-    followUpStatus: 'Pending' as const 
+    followUpStatus: 'Pending' as 'Solved' | 'Pending' | 'Ongoing'
   });
 
   const handleOpenAdd = () => {
@@ -87,6 +94,7 @@ const CounselingView: React.FC = () => {
       const newRecord: CounselingRecord = {
         ...formState,
         id: Date.now().toString(),
+        branchId: activeBranchId,
         date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         counselor: 'Dr. Silas Okeke', 
       };
