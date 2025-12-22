@@ -25,8 +25,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ branches, setBranches }) =>
   const [isCopied, setIsCopied] = useState(false);
   const [dbStatus, setDbStatus] = useState<{connected: boolean, tables: string[]}>({ connected: false, tables: [] });
   
-  const sqlScript = `-- CHARIS CHRISTIAN CENTER FULL PRODUCTION SCHEMA
--- Run this in your Supabase SQL Editor to complete your node setup
+  const sqlScript = `-- CHARIS CHRISTIAN CENTER: MASTER PRODUCTION SCHEMA v4.5
+-- Run this in your Supabase SQL Editor to complete your node setup.
 
 -- 1. Enable UUID Extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -86,31 +86,70 @@ CREATE TABLE IF NOT EXISTS transactions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
   amount DECIMAL(12,2) NOT NULL,
-  type TEXT NOT NULL, -- 'Tithe', 'Offering', 'Utility', etc.
-  method TEXT NOT NULL, -- 'Mobile Money', 'Cash', etc.
+  type TEXT NOT NULL, 
+  method TEXT NOT NULL,
   status TEXT DEFAULT 'Completed',
   description TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 7. Seed Initial HQ
+-- 7. Create Sermons Table
+CREATE TABLE IF NOT EXISTS sermons (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  preacher TEXT NOT NULL,
+  type TEXT DEFAULT 'Video',
+  views_count INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 8. Create Events Table
+CREATE TABLE IF NOT EXISTS events (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  event_date DATE NOT NULL,
+  event_time TIME NOT NULL,
+  location TEXT NOT NULL,
+  status TEXT DEFAULT 'Upcoming',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 9. Create Products Table (Store)
+CREATE TABLE IF NOT EXISTS products (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  sku TEXT UNIQUE NOT NULL,
+  price DECIMAL(10,2) NOT NULL,
+  stock_quantity INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 10. Enable RLS & Initial HQ Seed
 INSERT INTO branches (name, location, code, is_hq) 
 VALUES ('CCC Global HQ', 'Accra, Ghana', 'HQ-ACC', true)
 ON CONFLICT (code) DO NOTHING;
 
--- 8. Enable RLS
 ALTER TABLE branches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
 ALTER TABLE counseling ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sermons ENABLE ROW LEVEL SECURITY;
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 
--- 9. Create Open Policies (Adjust for production security)
-CREATE POLICY "Allow select for authenticated" ON branches FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Allow select for authenticated" ON members FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Allow select for authenticated" ON counseling FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Allow select for authenticated" ON transactions FOR SELECT TO authenticated USING (true);
-`;
+-- 11. Global Access Policy
+DO $$ 
+BEGIN
+    EXECUTE 'CREATE POLICY "Staff Access" ON branches FOR ALL TO authenticated USING (true)';
+    EXECUTE 'CREATE POLICY "Staff Access" ON members FOR ALL TO authenticated USING (true)';
+    EXECUTE 'CREATE POLICY "Staff Access" ON attendance FOR ALL TO authenticated USING (true)';
+    EXECUTE 'CREATE POLICY "Staff Access" ON counseling FOR ALL TO authenticated USING (true)';
+    EXECUTE 'CREATE POLICY "Staff Access" ON transactions FOR ALL TO authenticated USING (true)';
+EXCEPTION WHEN others THEN NULL;
+END $$;`;
 
   useEffect(() => {
     verifyConnection();
@@ -119,7 +158,7 @@ CREATE POLICY "Allow select for authenticated" ON transactions FOR SELECT TO aut
   const verifyConnection = async () => {
     const isConnected = await checkSupabaseConnection();
     if (isConnected) {
-      setDbStatus({ connected: true, tables: ['branches', 'members', 'attendance', 'counseling', 'transactions'] });
+      setDbStatus({ connected: true, tables: ['branches', 'members', 'attendance', 'counseling', 'transactions', 'sermons', 'events', 'products'] });
     } else {
       setDbStatus({ connected: false, tables: [] });
     }
@@ -196,7 +235,7 @@ CREATE POLICY "Allow select for authenticated" ON transactions FOR SELECT TO aut
                            <div className="p-3 bg-gold-500 rounded-2xl text-black">
                               <Terminal size={24} />
                            </div>
-                           <h4 className="text-lg font-black text-white uppercase tracking-tight">Database DDL Script</h4>
+                           <h4 className="text-lg font-black text-white uppercase tracking-tight">Database DDL Master Script</h4>
                         </div>
                         <button 
                           onClick={handleCopy}
