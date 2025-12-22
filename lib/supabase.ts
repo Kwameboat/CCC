@@ -2,29 +2,17 @@
 import { createClient } from '@supabase/supabase-js';
 
 /**
- * CHARIS INFRASTRUCTURE: SUPABASE CLIENT
+ * CHARIS INFRASTRUCTURE: PRODUCTION SUPABASE CLIENT
  * 
- * Securely initializes the connection using environment variables.
- * Prioritizes VITE_ prefixed variables for the bundler.
+ * Connected to Project: ixjdszpzbqhxxhphmtqe
  */
 
-// @ts-ignore
-const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-// @ts-ignore
-const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+const SUPABASE_URL = 'https://ixjdszpzbqhxxhphmtqe.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4amRzenB6dGJxaHhocGhtdHFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0MTkwNDQsImV4cCI6MjA4MTk5NTA0NH0.CrzGi9YLIT7f7dG3USKAMIGKNVkhpQUF6Q75C107q3E';
 
-const isLive = !!(SUPABASE_URL && SUPABASE_ANON_KEY && !SUPABASE_URL.includes('your-project-url'));
+console.info("CCC CLOUD: PRODUCTION NODE ACTIVE");
 
-if (!isLive) {
-  console.info("CCC CLOUD: RUNNING IN DEMO MODE");
-} else {
-  console.info("CCC CLOUD: PRODUCTION NODE ACTIVE");
-}
-
-const finalUrl = SUPABASE_URL || 'https://your-project-url.supabase.co';
-const finalKey = SUPABASE_ANON_KEY || 'your-anon-key-placeholder';
-
-export const supabase = createClient(finalUrl, finalKey, {
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
@@ -36,7 +24,8 @@ export const supabase = createClient(finalUrl, finalKey, {
  */
 export const checkSupabaseConnection = async () => {
   try {
-    const { data, error } = await supabase.from('branches').select('count', { count: 'exact', head: true });
+    // Check if the branches table exists and is accessible
+    const { error } = await supabase.from('branches').select('id').limit(1);
     return !error;
   } catch (e) {
     return false;

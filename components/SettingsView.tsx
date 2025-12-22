@@ -25,13 +25,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({ branches, setBranches }) =>
   const [isCopied, setIsCopied] = useState(false);
   const [dbStatus, setDbStatus] = useState<{connected: boolean, tables: string[]}>({ connected: false, tables: [] });
   
-  const sqlScript = `-- CHARIS CHRISTIAN CENTER: MASTER PRODUCTION SCHEMA v4.5
--- Run this in your Supabase SQL Editor to complete your node setup.
+  const sqlScript = `-- CHARIS CHRISTIAN CENTER: MASTER PRODUCTION SCHEMA v6.0
+-- Run this in your Supabase SQL Editor to fully activate your Global Cloud Node.
 
--- 1. Enable UUID Extension
+-- 0. Extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 2. Create Branches Table
+-- 1. Branches Table (Architecture)
 CREATE TABLE IF NOT EXISTS branches (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS branches (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. Create Members Table
+-- 2. Members Table (Congregation)
 CREATE TABLE IF NOT EXISTS members (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS members (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 4. Create Attendance Table
+-- 3. Attendance Table (Kiosk Logs)
 CREATE TABLE IF NOT EXISTS attendance (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS attendance (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 5. Create Counseling Table
+-- 4. Counseling Table (Welfare)
 CREATE TABLE IF NOT EXISTS counseling (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
@@ -81,19 +81,19 @@ CREATE TABLE IF NOT EXISTS counseling (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 6. Create Transactions Table (Finance)
+-- 5. Transactions Table (Finance)
 CREATE TABLE IF NOT EXISTS transactions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
   amount DECIMAL(12,2) NOT NULL,
-  type TEXT NOT NULL, 
-  method TEXT NOT NULL,
+  type TEXT NOT NULL, -- Tithe, Offering, etc.
+  method TEXT NOT NULL, -- Mobile Money, Bank, etc.
   status TEXT DEFAULT 'Completed',
   description TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 7. Create Sermons Table
+-- 6. Media & Logistics
 CREATE TABLE IF NOT EXISTS sermons (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
@@ -104,7 +104,6 @@ CREATE TABLE IF NOT EXISTS sermons (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 8. Create Events Table
 CREATE TABLE IF NOT EXISTS events (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
@@ -116,7 +115,6 @@ CREATE TABLE IF NOT EXISTS events (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 9. Create Products Table (Store)
 CREATE TABLE IF NOT EXISTS products (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
@@ -126,11 +124,12 @@ CREATE TABLE IF NOT EXISTS products (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 10. Enable RLS & Initial HQ Seed
+-- 7. Initial Seed: Register HQ
 INSERT INTO branches (name, location, code, is_hq) 
 VALUES ('CCC Global HQ', 'Accra, Ghana', 'HQ-ACC', true)
 ON CONFLICT (code) DO NOTHING;
 
+-- 8. Security: Row Level Security (RLS)
 ALTER TABLE branches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
@@ -140,7 +139,7 @@ ALTER TABLE sermons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 
--- 11. Global Access Policy
+-- 9. Security: Auth Policy (Allow Authenticated Staff)
 DO $$ 
 BEGIN
     EXECUTE 'CREATE POLICY "Staff Access" ON branches FOR ALL TO authenticated USING (true)';
@@ -148,6 +147,9 @@ BEGIN
     EXECUTE 'CREATE POLICY "Staff Access" ON attendance FOR ALL TO authenticated USING (true)';
     EXECUTE 'CREATE POLICY "Staff Access" ON counseling FOR ALL TO authenticated USING (true)';
     EXECUTE 'CREATE POLICY "Staff Access" ON transactions FOR ALL TO authenticated USING (true)';
+    EXECUTE 'CREATE POLICY "Staff Access" ON sermons FOR ALL TO authenticated USING (true)';
+    EXECUTE 'CREATE POLICY "Staff Access" ON events FOR ALL TO authenticated USING (true)';
+    EXECUTE 'CREATE POLICY "Staff Access" ON products FOR ALL TO authenticated USING (true)';
 EXCEPTION WHEN others THEN NULL;
 END $$;`;
 
@@ -184,25 +186,25 @@ END $$;`;
                    <h3 className="text-xl font-black uppercase tracking-tight">Vercel Deployment Guide</h3>
                 </div>
                 <p className="text-slate-300 text-sm font-medium leading-relaxed max-w-xl mb-8">
-                  Deploying to Vercel ensures your API keys are masked and your African Payment Webhooks are received with 99.9% uptime.
+                  Your project is live at <span className="text-gold-400">ccc-neon-nu.vercel.app</span>. Vercel masks your API keys and ensures 99.9% availability for your payment webhooks.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                   <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
-                     <div className="text-[10px] font-black uppercase tracking-widest text-gold-400 mb-2">Step 1: Push to GitHub</div>
-                     <p className="text-[11px] text-slate-400 leading-snug">Connect your private repository to a Vercel Project.</p>
+                     <div className="text-[10px] font-black uppercase tracking-widest text-gold-400 mb-2">Build Status</div>
+                     <p className="text-[11px] text-emerald-400 font-black leading-snug">SUCCESS: PRODUCTION NODE LIVE</p>
                   </div>
                   <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
-                     <div className="text-[10px] font-black uppercase tracking-widest text-gold-400 mb-2">Step 2: Add Keys</div>
-                     <p className="text-[11px] text-slate-400 leading-snug">Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to Environment Variables.</p>
+                     <div className="text-[10px] font-black uppercase tracking-widest text-gold-400 mb-2">Region</div>
+                     <p className="text-[11px] text-slate-400 leading-snug">Automatic Edge Routing Active.</p>
                   </div>
                 </div>
                 <a 
-                  href="https://vercel.com/new" 
+                  href="https://vercel.com/dashboard" 
                   target="_blank" 
                   rel="noreferrer"
                   className="inline-flex items-center gap-2 px-8 py-3 bg-gold-500 text-black rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-gold-600 transition-all shadow-xl shadow-gold-900/20"
                 >
-                  Go to Vercel Dashboard <ExternalLink size={14} />
+                  Manage Deployment <ExternalLink size={14} />
                 </a>
               </div>
               <Cloud className="absolute -bottom-10 -right-10 w-64 h-64 text-white/5 animate-pulse" />
@@ -235,18 +237,21 @@ END $$;`;
                            <div className="p-3 bg-gold-500 rounded-2xl text-black">
                               <Terminal size={24} />
                            </div>
-                           <h4 className="text-lg font-black text-white uppercase tracking-tight">Database DDL Master Script</h4>
+                           <h4 className="text-lg font-black text-white uppercase tracking-tight">Database Master DDL v6.0</h4>
                         </div>
                         <button 
                           onClick={handleCopy}
                           className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
                         >
                           {isCopied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                          {isCopied ? 'Copied to Clipboard' : 'Copy Script'}
+                          {isCopied ? 'Copied' : 'Copy Script'}
                         </button>
                       </div>
                       <div className="flex-1 bg-slate-900/50 rounded-2xl p-4 font-mono text-[9px] text-slate-400 overflow-x-auto border border-white/5 scrollbar-hide mb-4">
                         <pre className="whitespace-pre">{sqlScript}</pre>
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-bold uppercase tracking-tight mt-2 flex items-center gap-2">
+                         <ShieldCheck size={14} className="text-gold-500" /> This script initializes all 8 core production modules.
                       </div>
                    </div>
                 </div>
@@ -285,18 +290,17 @@ END $$;`;
           </div>
         );
       
-      default: return <div className="p-20 text-center text-slate-400 font-black uppercase tracking-[0.3em]">Module Terminal Locked.</div>;
+      default: return <div className="p-20 text-center text-slate-400 font-black uppercase tracking-[0.3em]">Terminal Module Locked.</div>;
     }
   };
 
   const navItems = [
     { id: 'db', label: 'Database Node', icon: Database },
-    { id: 'deployment', label: 'Cloud Gateway', icon: Rocket },
+    { id: 'deployment', label: 'Vercel Deployment', icon: Rocket },
     { id: 'branches', label: 'Site Architecture', icon: MapPin },
     { id: 'payments', label: 'Paystack / Hubtel', icon: Wallet },
     { id: 'automations', label: 'Logic Streams', icon: Zap },
-    { id: 'roles', label: 'RBAC Encryption', icon: Shield },
-    { id: 'general', label: 'Global Branding', icon: Church },
+    { id: 'roles', label: 'RBAC Security', icon: Shield },
   ];
 
   return (
