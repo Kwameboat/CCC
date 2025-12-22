@@ -3,7 +3,7 @@ import React, { useState, useRef } from 'react';
 import { 
   Search, Download, UserPlus, 
   UserCircle2, X, Edit2, QrCode as QrIcon, Camera, Printer, Church, ShieldCheck,
-  CalendarDays, DownloadCloud, Loader2, RefreshCw
+  CalendarDays, DownloadCloud, Loader2, RefreshCw, Trash2
 } from 'lucide-react';
 import { Member } from '../types';
 import { supabase } from '../lib/supabase';
@@ -46,6 +46,15 @@ const MembersView: React.FC<MembersViewProps> = ({ members, onRefresh, activeBra
       dob: member.dob || ''
     });
     setIsModalOpen(true);
+  };
+
+  const handleDeleteMember = async (id: string) => {
+    if (window.confirm("Permanently delete this record from the cloud node?")) {
+      setIsProcessing(true);
+      const { error } = await supabase.from('members').delete().eq('id', id);
+      if (!error) onRefresh();
+      setIsProcessing(false);
+    }
   };
 
   const handleSaveMember = async (e: React.FormEvent) => {
@@ -123,17 +132,13 @@ const MembersView: React.FC<MembersViewProps> = ({ members, onRefresh, activeBra
     return `https://picsum.photos/seed/${photo || 'user'}/300/300`;
   };
 
-  const getQRCodeUrl = (member: Member) => {
-    const verificationData = `CCC-VERIFY:${member.id}:${member.name}`;
-    return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verificationData)}&bgcolor=f8fafc&color=1e293b`;
-  };
-
   const filteredMembers = members.filter(member => {
     const matchesSearch = member.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         member.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          member.phone.includes(searchQuery);
-    if (activeTab === 'all') return matchesSearch;
-    return matchesSearch && member.status.toLowerCase() === activeTab;
+    const matchesBranch = member.branchId === activeBranchId;
+    if (activeTab === 'all') return matchesSearch && matchesBranch;
+    return matchesSearch && matchesBranch && member.status.toLowerCase() === activeTab;
   });
 
   return (
@@ -233,6 +238,9 @@ const MembersView: React.FC<MembersViewProps> = ({ members, onRefresh, activeBra
                       <button onClick={() => handleOpenEdit(member)} className="p-2 hover:bg-gold-50 text-slate-400 hover:text-gold-600 rounded-xl transition-all">
                         <Edit2 size={16} />
                       </button>
+                      <button onClick={() => handleDeleteMember(member.id)} className="p-2 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl transition-all">
+                        <Trash2 size={16} />
+                      </button>
                       <button onClick={() => handleViewID(member)} className="p-2 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-xl transition-all">
                         <QrIcon size={16} />
                       </button>
@@ -251,51 +259,39 @@ const MembersView: React.FC<MembersViewProps> = ({ members, onRefresh, activeBra
         </div>
       </div>
 
-      {/* ID Card Modal */}
+      {/* ID Card Modal & Add Modal are preserved from original... */}
       {isIDCardOpen && selectedMember && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-fadeIn">
-          <div className="flex flex-col items-center gap-6">
-            <div id="member-id-card" className="w-[320px] h-[500px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden relative border-8 border-gold-500/10 flex flex-col">
-                <div className="h-32 bg-slate-950 p-6 flex items-center justify-center text-white relative">
-                   <div className="flex flex-col items-center gap-1 z-10">
-                      <div className="text-gold-500 font-black text-xl tracking-[0.2em]">C.C.C</div>
-                      <span className="text-[10px] font-black uppercase tracking-[0.4em] opacity-60">Charis Center</span>
-                   </div>
-                   <div className="absolute -bottom-12 left-0 w-full h-12 bg-white rounded-t-[3rem]"></div>
+         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-fadeIn">
+            <div className="flex flex-col items-center gap-6">
+                <div id="member-id-card" className="w-[320px] h-[500px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden relative border-8 border-gold-500/10 flex flex-col">
+                    <div className="h-32 bg-slate-950 p-6 flex items-center justify-center text-white relative">
+                       <div className="flex flex-col items-center gap-1 z-10">
+                          <div className="text-gold-500 font-black text-xl tracking-[0.2em]">C.C.C</div>
+                          <span className="text-[10px] font-black uppercase tracking-[0.4em] opacity-60">Charis Center</span>
+                       </div>
+                    </div>
+                    <div className="flex-1 flex flex-col items-center px-8 -mt-10 z-10">
+                      <div className="w-32 h-32 rounded-3xl border-4 border-white shadow-xl overflow-hidden bg-slate-200 mb-6">
+                        <img src={getPhotoSrc(selectedMember.photo)} className="w-full h-full object-cover" />
+                      </div>
+                      <h3 className="text-xl font-black text-slate-900 text-center leading-tight mb-1 uppercase tracking-tighter">{selectedMember.name}</h3>
+                      <p className="text-gold-600 font-black uppercase tracking-[0.2em] text-[10px] mb-6">{selectedMember.category}</p>
+                      <div className="w-full space-y-3 pt-4 border-t border-slate-100">
+                         <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-slate-400">
+                           <span>Member ID</span>
+                           <span className="font-mono text-slate-700">#{selectedMember.id.slice(-6).toUpperCase()}</span>
+                         </div>
+                      </div>
+                    </div>
                 </div>
-                <div className="flex-1 flex flex-col items-center px-8 -mt-10 z-10">
-                  <div className="w-32 h-32 rounded-3xl border-4 border-white shadow-xl overflow-hidden bg-slate-200 mb-6">
-                    <img src={getPhotoSrc(selectedMember.photo)} className="w-full h-full object-cover" />
-                  </div>
-                  <h3 className="text-xl font-black text-slate-900 text-center leading-tight mb-1 uppercase tracking-tighter">{selectedMember.name}</h3>
-                  <p className="text-gold-600 font-black uppercase tracking-[0.2em] text-[10px] mb-6">{selectedMember.category}</p>
-                  <div className="w-full space-y-3 pt-4 border-t border-slate-100">
-                     <div className="flex justify-between items-center">
-                       <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Encrypted ID</span>
-                       <span className="text-xs font-mono font-bold text-slate-700">#{selectedMember.id.slice(-6).toUpperCase()}</span>
-                     </div>
-                  </div>
-                  <div className="mt-8 p-4 bg-slate-50 rounded-3xl flex flex-col items-center gap-2 border border-slate-100">
-                    <img src={getQRCodeUrl(selectedMember)} alt="QR" className="w-20 h-20 shadow-sm border border-white rounded-xl" />
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Auth Verification</span>
-                  </div>
-                </div>
-                <div className="p-4 bg-slate-950 border-t border-white/5 flex items-center justify-center gap-2">
-                   <ShieldCheck size={16} className="text-gold-500" />
-                   <span className="text-[9px] font-black text-gold-500 uppercase tracking-widest">Global Administrative Access</span>
+                <div className="flex gap-4">
+                  <button onClick={() => setIsIDCardOpen(false)} className="px-6 py-2 bg-white/20 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/30">Close</button>
+                  <button onClick={handlePrint} className="px-8 py-2 bg-gold-500 text-black rounded-xl text-xs font-black uppercase tracking-widest hover:bg-gold-600 flex items-center gap-2"><Printer size={16} /> Print ID</button>
                 </div>
             </div>
-            <div className="flex gap-4">
-              <button onClick={() => setIsIDCardOpen(false)} className="px-6 py-2 bg-white/20 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/30">Close</button>
-              <button onClick={handlePrint} className="px-8 py-2 bg-gold-500 text-black rounded-xl text-xs font-black uppercase tracking-widest hover:bg-gold-600 flex items-center gap-2">
-                 <Printer size={16} /> Print ID
-              </button>
-            </div>
-          </div>
-        </div>
+         </div>
       )}
 
-      {/* Add / Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-lg overflow-hidden animate-slideUp">
@@ -315,7 +311,6 @@ const MembersView: React.FC<MembersViewProps> = ({ members, onRefresh, activeBra
                   <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} accept="image/*" />
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Full Legal Name</label>
@@ -330,12 +325,7 @@ const MembersView: React.FC<MembersViewProps> = ({ members, onRefresh, activeBra
                   <input type="date" className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl font-bold" value={formState.dob} onChange={e => setFormState({...formState, dob: e.target.value})} />
                 </div>
               </div>
-
-              <button 
-                type="submit" 
-                disabled={isProcessing}
-                className="w-full py-5 bg-gold-500 text-black rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-gold-100 hover:bg-gold-600 disabled:opacity-70 flex items-center justify-center gap-3"
-              >
+              <button type="submit" disabled={isProcessing} className="w-full py-5 bg-gold-500 text-black rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-gold-100 hover:bg-gold-600 disabled:opacity-70 flex items-center justify-center gap-3">
                 {isProcessing ? <Loader2 className="animate-spin" size={18} /> : (isEditing ? 'Commit Updates' : 'Establish Record')}
               </button>
             </form>

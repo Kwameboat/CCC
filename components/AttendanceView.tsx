@@ -36,11 +36,9 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ members, onRefresh, act
   const [checkIns, setCheckIns] = useState<CheckInRecord[]>([]);
   const [registrationForm, setRegistrationForm] = useState({ name: '', phone: '', email: '', dob: '' });
 
-  // 1. Fetch Current Service Logs
+  // Fetch Current Service Logs
   useEffect(() => {
     fetchTodayLogs();
-
-    // 2. REAL-TIME SUBSCRIPTION
     const channel = supabase
       .channel('attendance_feed')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'attendance' }, (payload) => {
@@ -58,7 +56,6 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ members, onRefresh, act
         }
       })
       .subscribe();
-
     return () => { channel.unsubscribe(); };
   }, [activeBranchId]);
 
@@ -108,6 +105,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ members, onRefresh, act
       setSearchTerm('');
       setTimeout(() => setShowSuccess(false), 3000);
       setIsRegistering(false);
+      fetchTodayLogs();
     }
   };
 
@@ -139,41 +137,31 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ members, onRefresh, act
       <div className="fixed inset-0 z-[999] bg-slate-950 flex flex-col text-white animate-fadeIn overflow-hidden">
         <div className="h-24 bg-slate-900 border-b border-white/5 flex items-center justify-between px-12 shrink-0 relative z-[1010]">
           <div className="flex items-center gap-4">
-             <div className="p-3 bg-gold-500 text-black rounded-2xl shadow-xl shadow-gold-500/20">
-               <Fingerprint size={32} />
-             </div>
+             <div className="p-3 bg-gold-500 text-black rounded-2xl shadow-xl shadow-gold-500/20"><Fingerprint size={32} /></div>
              <div>
                <h1 className="text-2xl font-black uppercase tracking-tight text-gold-500">Kiosk Terminal</h1>
                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5 mt-1">
-                 <ShieldCheck size={14} className="text-gold-500" /> Digital Presence System v4
+                 <ShieldCheck size={14} className="text-gold-500" /> Digital Presence Node Active
                </p>
              </div>
           </div>
-          <button onClick={() => { setIsKioskMode(false); setIsRegistering(false); }} className="px-6 py-3 bg-white/5 hover:bg-rose-600 rounded-2xl text-xs font-black uppercase tracking-widest transition-all">
-            Exit Station
-          </button>
+          <button onClick={() => { setIsKioskMode(false); setIsRegistering(false); }} className="px-6 py-3 bg-white/5 hover:bg-rose-600 rounded-2xl text-xs font-black uppercase tracking-widest transition-all">Exit Station</button>
         </div>
 
         {showSuccess && (
           <div className="absolute inset-0 z-[1100] bg-gold-500 flex flex-col items-center justify-center p-8 text-center animate-fadeIn">
-            <div className="w-44 h-44 bg-slate-950 text-gold-500 rounded-[3rem] flex items-center justify-center mb-10 shadow-3xl animate-bounce">
-              <CheckCircle2 size={110} strokeWidth={4} />
-            </div>
-            <h2 className="text-7xl font-black mb-6 uppercase tracking-tighter text-slate-950">Welcome Home!</h2>
-            <p className="text-4xl text-slate-800 font-black uppercase max-w-2xl leading-tight">
-              {lastCheckedInMember}
-            </p>
+            <div className="w-44 h-44 bg-slate-950 text-gold-500 rounded-[3rem] flex items-center justify-center mb-10 shadow-3xl animate-bounce"><CheckCircle2 size={110} strokeWidth={4} /></div>
+            <h2 className="text-7xl font-black mb-6 uppercase tracking-tighter text-slate-950">Welcome!</h2>
+            <p className="text-4xl text-slate-800 font-black uppercase max-w-2xl leading-tight">{lastCheckedInMember}</p>
           </div>
         )}
 
         {isRegistering ? (
           <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto relative z-[1005]">
             <div className="max-w-2xl w-full bg-slate-900 rounded-[3rem] p-12 border border-white/10 animate-slideUp">
-              <button onClick={() => setIsRegistering(false)} className="flex items-center gap-2 text-gold-500 font-black uppercase text-xs tracking-widest mb-10">
-                <ArrowLeft size={16} /> Back
-              </button>
+              <button onClick={() => setIsRegistering(false)} className="flex items-center gap-2 text-gold-500 font-black uppercase text-xs tracking-widest mb-10"><ArrowLeft size={16} /> Back</button>
               <form onSubmit={handleQuickRegister} className="space-y-8">
-                <input required placeholder="Your Full Name" className="w-full px-8 py-6 bg-slate-800 border-2 border-white/5 rounded-3xl text-2xl font-black focus:border-gold-500 outline-none" value={registrationForm.name} onChange={e => setRegistrationForm({...registrationForm, name: e.target.value})} />
+                <input required placeholder="Full Name" className="w-full px-8 py-6 bg-slate-800 border-2 border-white/5 rounded-3xl text-2xl font-black focus:border-gold-500 outline-none" value={registrationForm.name} onChange={e => setRegistrationForm({...registrationForm, name: e.target.value})} />
                 <input required placeholder="Phone Number" className="w-full px-8 py-6 bg-slate-800 border-2 border-white/5 rounded-3xl text-2xl font-black focus:border-gold-500 outline-none" value={registrationForm.phone} onChange={e => setRegistrationForm({...registrationForm, phone: e.target.value})} />
                 <button type="submit" className="w-full py-7 bg-gold-500 text-black rounded-[2.5rem] text-2xl font-black uppercase tracking-widest shadow-2xl hover:bg-gold-600 transition-all">Confirm Check-In</button>
               </form>
@@ -186,7 +174,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ members, onRefresh, act
                   <h2 className="text-8xl font-black tracking-tighter uppercase leading-none">CHECK-IN</h2>
                   <div className="relative">
                     <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-slate-500" size={44} />
-                    <input autoFocus placeholder="Name or Phone..." className="w-full pl-24 pr-10 py-10 bg-slate-900 border-4 border-white/10 rounded-[3rem] text-4xl font-black focus:border-gold-500 outline-none transition-all shadow-3xl" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                    <input autoFocus placeholder="Enter Name or Phone..." className="w-full pl-24 pr-10 py-10 bg-slate-900 border-4 border-white/10 rounded-[3rem] text-4xl font-black focus:border-gold-500 outline-none transition-all shadow-3xl" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                   </div>
                   {searchTerm.length >= 2 && (
                     <div className="grid grid-cols-1 gap-4">
@@ -196,14 +184,14 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ members, onRefresh, act
                           <div className="font-black text-4xl uppercase tracking-tighter">{m.name}</div>
                         </button>
                       )) : (
-                        <button onClick={() => { setRegistrationForm({...registrationForm, name: searchTerm}); setIsRegistering(true); }} className="w-full py-10 border-4 border-dashed border-white/10 rounded-[4rem] text-slate-500 font-black text-2xl uppercase hover:bg-white/5">+ New Visitor Registration</button>
+                        <button onClick={() => { setRegistrationForm({...registrationForm, name: searchTerm}); setIsRegistering(true); }} className="w-full py-10 border-4 border-dashed border-white/10 rounded-[4rem] text-slate-500 font-black text-2xl uppercase hover:bg-white/5">+ Register New Visitor</button>
                       )}
                     </div>
                   )}
                </div>
             </div>
             <div className="hidden lg:flex lg:w-1/3 bg-slate-900 flex-col p-12 border-l border-white/5">
-                <h3 className="text-xl font-black uppercase mb-8 tracking-widest text-slate-500">Live Service Feed</h3>
+                <h3 className="text-xl font-black uppercase mb-8 tracking-widest text-slate-500">Live Feed</h3>
                 <div className="space-y-4 overflow-y-auto">
                   {checkIns.map(c => (
                     <div key={c.id} className="p-6 bg-slate-950 rounded-3xl border border-white/5 flex justify-between items-center">
@@ -226,16 +214,16 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ members, onRefresh, act
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Turnout Monitoring</h2>
-          <p className="text-slate-500 text-sm font-medium">Real-time attendance auditing for {activeBranchId}.</p>
+          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Service Turnout Monitoring</h2>
+          <p className="text-slate-500 text-sm font-medium">Real-time attendance auditing for this node.</p>
         </div>
-        <button onClick={() => setIsKioskMode(true)} className="px-8 py-3 bg-slate-950 text-gold-500 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all shadow-2xl flex items-center gap-2">
+        <button onClick={() => setIsKioskMode(true)} className="px-8 py-3 bg-slate-950 text-gold-500 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-black shadow-2xl flex items-center gap-2">
           <Smartphone size={18} /> Launch Public Kiosk
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm relative overflow-hidden group">
+        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm relative overflow-hidden">
             <div className="relative z-10">
                <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Total Arrivals</div>
                <div className="text-5xl font-black text-slate-900">{stats.total}</div>
@@ -243,26 +231,24 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ members, onRefresh, act
             <Users className="absolute -bottom-4 -right-4 w-24 h-24 text-gold-50 opacity-20" />
         </div>
         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-            <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">New Soul Count</div>
+            <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Visitor Count</div>
             <div className="text-5xl font-black text-gold-600">{stats.firstTimers}</div>
         </div>
         <div className="bg-slate-950 p-8 rounded-[2.5rem] text-white">
-            <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">System Health</div>
+            <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Node Health</div>
             <div className="text-xl font-black text-gold-500 uppercase flex items-center gap-2 mt-2">
-               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div> 
-               Live & Syncing
+               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div> Live Sync
             </div>
         </div>
       </div>
 
       <div className="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm h-[500px] flex flex-col">
          <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="font-black text-slate-900 uppercase tracking-tight">Audit Log Feed</h3>
-            <span className="text-[10px] font-black text-gold-600 bg-gold-50 px-3 py-1 rounded-full uppercase">Today's Service</span>
+            <h3 className="font-black text-slate-900 uppercase tracking-tight">Audit Log</h3>
          </div>
          <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {checkIns.map(check => (
-              <div key={check.id} className="p-5 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between">
+              <div key={check.id} className="p-5 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between animate-fadeIn">
                  <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-xl bg-slate-900 text-gold-500 flex items-center justify-center font-black">{check.name[0]}</div>
                     <div>
