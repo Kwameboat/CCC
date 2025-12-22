@@ -2,25 +2,23 @@
 import { createClient } from '@supabase/supabase-js';
 
 /**
- * PRODUCTION SUPABASE CONFIGURATION
+ * CHARIS INFRASTRUCTURE: SUPABASE CLIENT
  * 
- * Vite (Vercel) uses import.meta.env for secrets.
- * Fallback to process.env for CI/CD environments and local testing.
+ * Securely initializes the connection using environment variables.
+ * Prioritizes VITE_ prefixed variables for the bundler.
  */
 
-// @ts-ignore - Handle environment differences between Vite and Node
-const SUPABASE_URL = (import.meta.env?.VITE_SUPABASE_URL || process.env.SUPABASE_URL);
 // @ts-ignore
-const SUPABASE_ANON_KEY = (import.meta.env?.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY);
+const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+// @ts-ignore
+const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
-// Detect environment status
 const isLive = !!(SUPABASE_URL && SUPABASE_ANON_KEY && !SUPABASE_URL.includes('your-project-url'));
 
 if (!isLive) {
-  console.info("--- CCC INFRASTRUCTURE: DEMO MODE ---");
-  console.info("To enable production, add VITE_SUPABASE_URL to your Vercel Environment Variables.");
+  console.info("CCC CLOUD: RUNNING IN DEMO MODE");
 } else {
-  console.info("--- CCC INFRASTRUCTURE: PRODUCTION MODE ---");
+  console.info("CCC CLOUD: PRODUCTION NODE ACTIVE");
 }
 
 const finalUrl = SUPABASE_URL || 'https://your-project-url.supabase.co';
@@ -34,7 +32,7 @@ export const supabase = createClient(finalUrl, finalKey, {
 });
 
 /**
- * DATABASE HEALTH CHECK
+ * DATABASE HEALTH AUDIT
  */
 export const checkSupabaseConnection = async () => {
   try {
