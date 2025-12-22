@@ -19,7 +19,7 @@ interface FormState {
   followUpStatus: 'Solved' | 'Pending' | 'Ongoing';
 }
 
-export default function CounselingView({ activeBranchId }: CounselingViewProps) {
+const CounselingView: React.FC<CounselingViewProps> = ({ activeBranchId }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -317,4 +317,6 @@ export default function CounselingView({ activeBranchId }: CounselingViewProps) 
       )}
     </div>
   );
-}
+};
+
+export default CounselingView;
