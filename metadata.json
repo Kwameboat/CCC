@@ -1,0 +1,7 @@
+{
+  "name": "Charis Christian Center (CCC)",
+  "description": "A high-end, bespoke Church Management System (ERP) for Charis Christian Center, featuring multi-site management, financial auditing, and administrative automation.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
