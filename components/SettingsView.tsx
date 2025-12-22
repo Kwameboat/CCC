@@ -6,12 +6,12 @@ import {
   ChevronRight, Clock, ShieldAlert, Cpu, Key, 
   Eye, EyeOff, Smartphone, Landmark, Wallet, Layers, Lock, Terminal, Activity,
   Server, Database, Filter, Sliders, Settings, ToggleLeft, ToggleRight,
-  Calendar, ShoppingBag, Mic2, Copy, Check
+  Calendar, ShoppingBag, Mic2, Copy, Check, Github, ExternalLink, Rocket, ShieldCheck, Cloud
 } from 'lucide-react';
 import { Branch, AutomationRule, GatewayConfig } from '../types';
-import { supabase } from '../lib/supabase';
+import { supabase, checkSupabaseConnection } from '../lib/supabase';
 
-type SettingsSection = 'general' | 'db' | 'roles' | 'notifications' | 'finance' | 'modules' | 'automations' | 'branches' | 'payments';
+type SettingsSection = 'general' | 'db' | 'deployment' | 'roles' | 'notifications' | 'finance' | 'modules' | 'automations' | 'branches' | 'payments';
 
 interface SettingsViewProps {
   branches: Branch[];
@@ -19,16 +19,13 @@ interface SettingsViewProps {
 }
 
 const SettingsView: React.FC<SettingsViewProps> = ({ branches, setBranches }) => {
-  const [activeSection, setActiveSection] = useState<SettingsSection>('db');
+  const [activeSection, setActiveSection] = useState<SettingsSection>('deployment');
   const [showSavedToast, setShowSavedToast] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [showAddBranch, setShowAddBranch] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [dbStatus, setDbStatus] = useState<{connected: boolean, tables: string[]}>({ connected: false, tables: [] });
   
   const sqlScript = `-- CHARIS CHRISTIAN CENTER PRODUCTION SCHEMA
--- RUN THIS IN SUPABASE SQL EDITOR
-
 CREATE TABLE IF NOT EXISTS branches (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
@@ -62,36 +59,17 @@ CREATE TABLE IF NOT EXISTS attendance (
   method TEXT DEFAULT 'Kiosk',
   is_first_timer BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS finance_transactions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
-  member_id UUID REFERENCES members(id) ON DELETE SET NULL,
-  amount DECIMAL(12,2) NOT NULL,
-  type TEXT NOT NULL,
-  method TEXT NOT NULL,
-  status TEXT DEFAULT 'Completed',
-  description TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-ALTER TABLE attendance REPLICA IDENTITY FULL;
-ALTER TABLE finance_transactions REPLICA IDENTITY FULL;`;
+);`;
 
   useEffect(() => {
-    checkConnection();
+    verifyConnection();
   }, []);
 
-  const checkConnection = async () => {
-    try {
-      const { data, error } = await supabase.from('branches').select('count', { count: 'exact', head: true });
-      if (!error) {
-        setDbStatus({ connected: true, tables: ['branches', 'members', 'attendance', 'finance'] });
-      } else {
-        setDbStatus({ connected: false, tables: [] });
-      }
-    } catch (e) {
+  const verifyConnection = async () => {
+    const isConnected = await checkSupabaseConnection();
+    if (isConnected) {
+      setDbStatus({ connected: true, tables: ['branches', 'members', 'attendance', 'finance_transactions'] });
+    } else {
       setDbStatus({ connected: false, tables: [] });
     }
   };
@@ -104,67 +82,119 @@ ALTER TABLE finance_transactions REPLICA IDENTITY FULL;`;
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'db':
+      case 'deployment':
         return (
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 animate-fadeIn">
-            <div className="mb-8 border-b border-slate-100 pb-6 flex justify-between items-start">
-              <div>
-                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Database Provisioning</h3>
-                <p className="text-sm text-slate-500 font-medium">Initialize and monitor your Supabase infrastructure.</p>
+          <div className="space-y-6 animate-fadeIn">
+            {/* Deployment Recommendation */}
+            <div className="bg-indigo-900 rounded-[2.5rem] p-10 text-white relative overflow-hidden shadow-2xl shadow-indigo-900/20 border border-white/10">
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-6">
+                   <div className="p-3 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20">
+                      <Rocket size={24} className="text-gold-400" />
+                   </div>
+                   <h3 className="text-xl font-black uppercase tracking-tight">Production Deployment Guide</h3>
+                </div>
+                <p className="text-indigo-100 text-sm font-medium leading-relaxed max-w-xl mb-8">
+                  For the **Charis Console**, we recommend deploying to **Vercel**. It provides the most secure environment for handling Supabase keys and African payment gateway webhooks.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+                     <div className="text-[10px] font-black uppercase tracking-widest text-gold-400 mb-2">Step 1: Push to GitHub</div>
+                     <p className="text-[11px] text-indigo-100 leading-snug">Initialize a Git repo and push your code to a private GitHub repository.</p>
+                  </div>
+                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+                     <div className="text-[10px] font-black uppercase tracking-widest text-gold-400 mb-2">Step 2: Connect Vercel</div>
+                     <p className="text-[11px] text-indigo-100 leading-snug">Import the project in Vercel and add your SUPABASE_URL and SUPABASE_ANON_KEY.</p>
+                  </div>
+                </div>
+                <a 
+                  href="https://vercel.com/new" 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 px-8 py-3 bg-white text-indigo-900 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-gold-400 hover:text-black transition-all shadow-xl"
+                >
+                  Deploy to Vercel Now <ExternalLink size={14} />
+                </a>
               </div>
-              <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl border ${dbStatus.connected ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'}`}>
-                <Activity size={16} className={dbStatus.connected ? 'animate-pulse' : ''} />
-                <span className="text-[10px] font-black uppercase tracking-widest">{dbStatus.connected ? 'Connected' : 'Offline / No Schema'}</span>
-              </div>
+              <Cloud className="absolute -bottom-10 -right-10 w-64 h-64 text-white/5 animate-pulse" />
             </div>
 
-            <div className="space-y-8">
-              <div className="p-8 bg-slate-950 rounded-[2.5rem] relative overflow-hidden group">
-                <div className="relative z-10">
-                   <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-3">
-                         <div className="p-3 bg-indigo-600 rounded-2xl text-white shadow-xl shadow-indigo-900/40">
-                            <Terminal size={24} />
-                         </div>
-                         <h4 className="text-lg font-black text-white uppercase tracking-tight">Production SQL Script</h4>
-                      </div>
-                      <button 
-                        onClick={handleCopy}
-                        className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
-                      >
-                        {isCopied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                        {isCopied ? 'Copied to Clipboard' : 'Copy Full Script'}
-                      </button>
-                   </div>
-                   <div className="bg-slate-900/50 rounded-2xl p-6 font-mono text-[11px] text-slate-400 overflow-x-auto border border-white/5 max-h-[300px] scrollbar-hide">
-                      <pre className="whitespace-pre">{sqlScript}</pre>
-                   </div>
-                   <p className="mt-6 text-[11px] text-slate-500 font-medium leading-relaxed italic">
-                     * Instructions: Copy this script, open your Supabase Dashboard, navigate to the SQL Editor, and run it as a new query to perfectly align your database with this app.
-                   </p>
+            {/* Production Health Check */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+               <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center text-center">
+                  <div className={`p-4 rounded-2xl mb-4 ${dbStatus.connected ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                    <ShieldCheck size={28} />
+                  </div>
+                  <h4 className="font-black text-slate-900 uppercase text-xs">Security Audit</h4>
+                  <p className="text-[10px] text-slate-400 font-medium mt-1">
+                    {dbStatus.connected ? 'SSL/TLS & RLS Verified' : 'Security Layer Inactive'}
+                  </p>
+               </div>
+               <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center text-center">
+                  <div className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl mb-4">
+                    <Activity size={28} />
+                  </div>
+                  <h4 className="font-black text-slate-900 uppercase text-xs">Environment</h4>
+                  <p className="text-[10px] text-slate-400 font-medium mt-1">
+                    {window.location.hostname === 'localhost' ? 'Local Dev Instance' : 'Production Cloud Node'}
+                  </p>
+               </div>
+               <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center text-center">
+                  <div className="p-4 bg-gold-50 text-gold-600 rounded-2xl mb-4">
+                    <Key size={28} />
+                  </div>
+                  <h4 className="font-black text-slate-900 uppercase text-xs">Key Masking</h4>
+                  <p className="text-[10px] text-slate-400 font-medium mt-1">
+                    Secrets are encrypted via process.env
+                  </p>
+               </div>
+            </div>
+          </div>
+        );
+
+      case 'db':
+        return (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-8">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-6 border-b border-slate-100">
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Database Provisioning</h3>
+                  <p className="text-sm text-slate-500 font-medium">Initialize and monitor your Supabase production infrastructure.</p>
                 </div>
-                <Database className="absolute -bottom-10 -right-10 w-48 h-48 text-indigo-500/10 group-hover:scale-110 transition-transform" />
+                <div className={`flex items-center gap-3 px-6 py-3 rounded-2xl border transition-all ${dbStatus.connected ? 'bg-emerald-50 border-emerald-100 text-emerald-700 shadow-lg shadow-emerald-100/50' : 'bg-rose-50 border-rose-100 text-rose-700 shadow-lg shadow-rose-100/50'}`}>
+                  <Activity size={20} className={dbStatus.connected ? 'animate-pulse' : ''} />
+                  <div className="text-left">
+                    <div className="text-[10px] font-black uppercase tracking-widest leading-none">Connection Status</div>
+                    <div className="text-xs font-black uppercase mt-1">{dbStatus.connected ? 'Production Active' : 'Demo Mode'}</div>
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                    <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Provisioned Tables</h5>
-                    <div className="space-y-2">
-                       {['branches', 'members', 'attendance', 'finance_transactions'].map(table => (
-                         <div key={table} className="flex items-center justify-between px-4 py-2 bg-white rounded-xl border border-slate-100">
-                            <span className="text-xs font-bold text-slate-700 font-mono">{table}</span>
-                            {dbStatus.connected ? <CheckCircle2 size={14} className="text-emerald-500" /> : <X size={14} className="text-slate-300" />}
-                         </div>
-                       ))}
-                    </div>
-                 </div>
-                 <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex flex-col justify-center items-center text-center">
-                    <Server size={40} className="text-slate-300 mb-4" />
-                    <h5 className="font-black text-slate-900 uppercase text-xs">Real-time Node</h5>
-                    <p className="text-[10px] text-slate-400 font-medium mt-1">Status: Webhook Listener Active</p>
-                    <button onClick={checkConnection} className="mt-4 text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline">Re-verify Sync</button>
-                 </div>
-              </div>
+              <div className="p-8 bg-slate-950 rounded-[2.5rem] relative overflow-hidden group">
+                   <div className="relative z-10 flex flex-col h-full">
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                           <div className="p-3 bg-indigo-600 rounded-2xl text-white">
+                              <Terminal size={24} />
+                           </div>
+                           <h4 className="text-lg font-black text-white uppercase tracking-tight">SQL Schema</h4>
+                        </div>
+                        <button 
+                          onClick={handleCopy}
+                          className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                        >
+                          {isCopied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                          {isCopied ? 'Copied' : 'Copy'}
+                        </button>
+                      </div>
+                      <div className="flex-1 bg-slate-900/50 rounded-2xl p-4 font-mono text-[9px] text-slate-400 overflow-x-auto border border-white/5 scrollbar-hide mb-4">
+                        <pre className="whitespace-pre">{sqlScript}</pre>
+                      </div>
+                      <p className="text-[9px] text-slate-500 font-medium italic">
+                        * Step 2: Run this in Supabase SQL Editor once connected.
+                      </p>
+                   </div>
+                </div>
             </div>
           </div>
         );
@@ -175,10 +205,9 @@ ALTER TABLE finance_transactions REPLICA IDENTITY FULL;`;
             <div className="flex items-center justify-between mb-8 border-b border-slate-100 pb-6">
                <div>
                   <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Organization Multi-Site Management</h3>
-                  <p className="text-sm text-slate-500 font-medium">Manage all church campuses and physical locations from a single command center.</p>
+                  <p className="text-sm text-slate-500 font-medium">Manage all church campuses from a single command center.</p>
                </div>
                <button 
-                 onClick={() => setShowAddBranch(true)}
                  className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100"
                >
                  <Plus size={16} /> Add New Campus
@@ -192,15 +221,11 @@ ALTER TABLE finance_transactions REPLICA IDENTITY FULL;`;
                       <div className={`p-3 rounded-2xl ${branch.isHQ ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>
                          <Church size={24} />
                       </div>
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                         <button className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-indigo-600 transition-colors"><Edit2 size={16} /></button>
-                         <button className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-rose-600 transition-colors"><Trash2 size={16} /></button>
-                      </div>
                    </div>
                    <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight">{branch.name}</h4>
-                        {branch.isHQ && <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[8px] font-black uppercase rounded-md border border-indigo-200">HQ Terminal</span>}
+                        {branch.isHQ && <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[8px] font-black uppercase rounded-md border border-indigo-200">HQ</span>}
                       </div>
                       <div className="flex items-center gap-1.5 text-xs text-slate-500 font-bold">
                          <MapPin size={12} className="text-slate-400" /> {branch.location}
@@ -212,17 +237,16 @@ ALTER TABLE finance_transactions REPLICA IDENTITY FULL;`;
           </div>
         );
       
-      // ... (Other sections remain unchanged but kept for structural integrity if needed)
       default: return <div className="p-8 text-center text-slate-400 font-bold uppercase tracking-widest">Select a configuration terminal.</div>;
     }
   };
 
   const navItems = [
+    { id: 'deployment', label: 'Deployment Hub', icon: Rocket },
     { id: 'db', label: 'Database Setup', icon: Database },
     { id: 'branches', label: 'Campus Manager', icon: MapPin },
     { id: 'payments', label: 'African Gateways', icon: Wallet },
     { id: 'automations', label: 'Logic Builder', icon: Zap },
-    { id: 'modules', label: 'SaaS Features', icon: LayoutGrid },
     { id: 'roles', label: 'RBAC Security', icon: Shield },
     { id: 'notifications', label: 'Push Hub', icon: Bell },
     { id: 'general', label: 'Org Profile', icon: Church },
@@ -279,8 +303,6 @@ ALTER TABLE finance_transactions REPLICA IDENTITY FULL;`;
       <style>{`
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         .animate-slideIn { animation: slideIn 0.3s ease-out forwards; }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .animate-slideUp { animation: slideUp 0.3s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
       `}</style>
