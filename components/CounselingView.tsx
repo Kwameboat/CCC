@@ -12,7 +12,14 @@ interface CounselingViewProps {
   activeBranchId: string;
 }
 
-const CounselingView: React.FC<CounselingViewProps> = ({ activeBranchId }) => {
+interface FormState {
+  personName: string;
+  problem: string;
+  solution: string;
+  followUpStatus: 'Solved' | 'Pending' | 'Ongoing';
+}
+
+export default function CounselingView({ activeBranchId }: CounselingViewProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -51,11 +58,11 @@ const CounselingView: React.FC<CounselingViewProps> = ({ activeBranchId }) => {
     },
   ]);
 
-  const [formState, setFormState] = useState({ 
+  const [formState, setFormState] = useState<FormState>({ 
     personName: '', 
     problem: '', 
     solution: '', 
-    followUpStatus: 'Pending' as 'Solved' | 'Pending' | 'Ongoing'
+    followUpStatus: 'Pending'
   });
 
   const handleOpenAdd = () => {
@@ -88,13 +95,19 @@ const CounselingView: React.FC<CounselingViewProps> = ({ activeBranchId }) => {
     if (isEditing && editingId) {
       setRecords(records.map(r => r.id === editingId ? {
         ...r,
-        ...formState
+        personName: formState.personName,
+        problem: formState.problem,
+        solution: formState.solution,
+        followUpStatus: formState.followUpStatus
       } : r));
     } else {
       const newRecord: CounselingRecord = {
-        ...formState,
         id: Date.now().toString(),
         branchId: activeBranchId,
+        personName: formState.personName,
+        problem: formState.problem,
+        solution: formState.solution,
+        followUpStatus: formState.followUpStatus,
         date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         counselor: 'Dr. Silas Okeke', 
       };
@@ -114,12 +127,12 @@ const CounselingView: React.FC<CounselingViewProps> = ({ activeBranchId }) => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Counseling & Welfare</h2>
-          <p className="text-slate-500">Confidential log for spiritual guidance and member welfare.</p>
+          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Counseling & Welfare</h2>
+          <p className="text-slate-500 text-sm font-medium">Confidential log for spiritual guidance and member welfare.</p>
         </div>
         <button 
           onClick={handleOpenAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg text-sm font-medium hover:bg-rose-700 shadow-lg shadow-rose-100 transition-all"
+          className="flex items-center gap-2 px-6 py-2 bg-rose-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-rose-700 shadow-xl shadow-rose-100 transition-all"
         >
           <Plus size={18} /> New Session
         </button>
@@ -132,7 +145,9 @@ const CounselingView: React.FC<CounselingViewProps> = ({ activeBranchId }) => {
           { label: 'Successful Outcomes', value: records.filter(r => r.followUpStatus === 'Solved').length, icon: CheckCircle2, color: 'emerald' },
         ].map((stat, i) => (
           <div key={i} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className={`p-3 bg-${stat.color}-50 text-${stat.color}-600 rounded-2xl`}><stat.icon size={24} /></div>
+            <div className={`p-4 bg-slate-50 text-slate-600 rounded-2xl`}>
+               <stat.icon size={24} />
+            </div>
             <div>
               <div className="text-2xl font-black text-slate-900">{stat.value}</div>
               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{stat.label}</div>
@@ -141,149 +156,159 @@ const CounselingView: React.FC<CounselingViewProps> = ({ activeBranchId }) => {
         ))}
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-4 border-b border-slate-200 bg-slate-50/50 flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="relative w-full md:w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
               type="text" 
-              placeholder="Search sessions by name..." 
+              placeholder="Search confidential records..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-rose-500" 
+              className="w-full pl-10 pr-4 py-2 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-rose-500 font-bold" 
             />
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-800"><Filter size={16} /> Filter Results</button>
+          <button className="flex items-center gap-2 px-4 py-2 text-xs font-black text-slate-400 hover:text-slate-800 uppercase tracking-widest transition-colors"><Filter size={16} /> Filter Terminal</button>
         </div>
 
         <div className="divide-y divide-slate-100">
           {filteredRecords.length > 0 ? filteredRecords.map((record) => (
-            <div key={record.id} className="p-6 hover:bg-slate-50/50 transition-colors group animate-fadeIn">
-              <div className="flex flex-col lg:flex-row gap-6">
+            <div key={record.id} className="p-8 hover:bg-slate-50/50 transition-colors group animate-fadeIn">
+              <div className="flex flex-col lg:flex-row gap-8">
                 <div className="lg:w-1/4">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                      <User size={16} />
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600 shadow-inner">
+                      <User size={20} />
                     </div>
-                    <div className="text-sm font-black text-slate-900">{record.personName}</div>
+                    <div className="text-sm font-black text-slate-900 uppercase tracking-tight">{record.personName}</div>
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase">
-                      <Calendar size={12} /> {record.date}
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      <Calendar size={14} className="text-rose-500" /> {record.date}
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase">
-                      <Bookmark size={12} /> {record.counselor}
+                    <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      <Bookmark size={14} className="text-indigo-500" /> {record.counselor}
                     </div>
-                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest w-fit mt-2 ${
-                      record.followUpStatus === 'Solved' ? 'bg-emerald-100 text-emerald-700' :
-                      record.followUpStatus === 'Pending' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'
+                    <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest w-fit mt-2 border ${
+                      record.followUpStatus === 'Solved' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                      record.followUpStatus === 'Pending' ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-amber-50 text-amber-700 border-amber-100'
                     }`}>
-                      {record.followUpStatus === 'Solved' ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
+                      {record.followUpStatus === 'Solved' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
                       {record.followUpStatus}
                     </div>
                   </div>
                 </div>
                 
                 <div className="flex-1 space-y-4">
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <div className="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-1">Stated Concern</div>
-                    <p className="text-sm text-slate-600 leading-relaxed italic">"{record.problem}"</p>
+                  <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 relative overflow-hidden">
+                    <div className="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                       <AlertCircle size={12} /> Stated Concern
+                    </div>
+                    <p className="text-sm text-slate-600 leading-relaxed italic relative z-10">"{record.problem}"</p>
                   </div>
-                  <div className="p-4 bg-white rounded-2xl border border-slate-200">
-                    <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1">Recommended Solution</div>
-                    <p className="text-sm text-slate-700 leading-relaxed">{record.solution}</p>
+                  <div className="p-6 bg-white rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden">
+                    <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                       <HeartHandshake size={12} /> Prescribed Solution
+                    </div>
+                    <p className="text-sm text-slate-700 leading-relaxed relative z-10 font-medium">{record.solution}</p>
                   </div>
                 </div>
 
-                <div className="flex lg:flex-col justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex lg:flex-col justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-0 translate-x-4">
                    <button 
                      onClick={() => handleOpenEdit(record)}
-                     className="p-2 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-indigo-600 hover:border-indigo-200 shadow-sm transition-all"
+                     className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-indigo-600 hover:border-indigo-200 shadow-sm hover:shadow-xl transition-all"
                    >
-                     <Edit2 size={18} />
+                     <Edit2 size={20} />
                    </button>
                    <button 
                      onClick={() => handleDeleteRecord(record.id)}
-                     className="p-2 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-rose-600 hover:border-rose-200 shadow-sm transition-all"
+                     className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-rose-600 hover:border-rose-200 shadow-sm hover:shadow-xl transition-all"
                    >
-                     <Trash2 size={18} />
+                     <Trash2 size={20} />
                    </button>
                 </div>
               </div>
             </div>
           )) : (
-            <div className="p-12 text-center text-slate-400">
-              No counseling records found matching your search.
+            <div className="p-20 text-center text-slate-400 flex flex-col items-center">
+              <div className="p-6 bg-slate-50 rounded-full mb-4">
+                <Search size={40} className="opacity-20" />
+              </div>
+              <p className="font-black uppercase tracking-widest text-xs">No matching confidential records.</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Counseling Session Modal (Add/Edit) */}
+      {/* Counseling Session Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-slideUp">
-            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-rose-100 text-rose-600 rounded-2xl"><HeartHandshake size={24} /></div>
-                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">
-                  {isEditing ? 'Edit Counseling Session' : 'Log Counseling Session'}
-                </h3>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-slideUp">
+            <div className="p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <div className="flex items-center gap-4">
+                <div className="p-4 bg-rose-600 text-white rounded-2xl shadow-xl shadow-rose-200 animate-pulse"><HeartHandshake size={28} /></div>
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
+                    {isEditing ? 'Modify Case File' : 'Log New Session'}
+                  </h3>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Confidential Welfare Log</p>
+                </div>
               </div>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-2 bg-white rounded-full shadow-sm"><X size={20} /></button>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-3 bg-white rounded-full shadow-lg border border-slate-100 transition-all hover:rotate-90"><X size={24} /></button>
             </div>
-            <form onSubmit={handleSaveRecord} className="p-8 space-y-6">
-              <div className="grid grid-cols-2 gap-6">
+            <form onSubmit={handleSaveRecord} className="p-10 space-y-8">
+              <div className="grid grid-cols-2 gap-8">
                 <div className="col-span-1">
-                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Congregant Name</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Congregant Full Name</label>
                   <input 
                     required type="text" 
-                    className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-rose-500/10 outline-none transition-all font-bold"
-                    placeholder="Search or enter name..."
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-rose-500/10 outline-none transition-all font-black text-slate-800"
+                    placeholder="Search member database..."
                     value={formState.personName}
                     onChange={e => setFormState({...formState, personName: e.target.value})}
                   />
                 </div>
                 <div className="col-span-1">
-                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Current Status</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Escalation Status</label>
                   <select 
-                    className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-rose-500/10 outline-none transition-all font-bold appearance-none"
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-rose-500/10 outline-none transition-all font-black text-slate-800 appearance-none"
                     value={formState.followUpStatus}
                     onChange={e => setFormState({...formState, followUpStatus: e.target.value as any})}
                   >
-                    <option value="Pending">Pending Follow-up</option>
-                    <option value="Ongoing">Case Ongoing</option>
-                    <option value="Solved">Case Solved / Closed</option>
+                    <option value="Pending">Pending Review</option>
+                    <option value="Ongoing">Active Counseling</option>
+                    <option value="Solved">Case Resolved</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Confidential Case Notes (The Problem)</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Confidential Case Notes</label>
                 <textarea 
                   required 
-                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-3xl focus:ring-4 focus:ring-rose-500/10 outline-none transition-all h-32 resize-none italic"
-                  placeholder="Summarize the core concern presented by the member..."
+                  className="w-full px-6 py-5 bg-slate-50 border border-slate-200 rounded-[2rem] focus:ring-4 focus:ring-rose-500/10 outline-none transition-all h-32 resize-none italic text-slate-600"
+                  placeholder="Record the stated concern in detail..."
                   value={formState.problem}
                   onChange={e => setFormState({...formState, problem: e.target.value})}
                 ></textarea>
               </div>
 
               <div>
-                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Prescribed Solution & Follow-up</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Recommended Spiritual Solution</label>
                 <textarea 
                   required 
-                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-3xl focus:ring-4 focus:ring-rose-500/10 outline-none transition-all h-32 resize-none"
-                  placeholder="Detail the spiritual guidance, practical advice, or institutional support recommended..."
+                  className="w-full px-6 py-5 bg-slate-50 border border-slate-200 rounded-[2rem] focus:ring-4 focus:ring-rose-500/10 outline-none transition-all h-32 resize-none text-slate-800"
+                  placeholder="Scriptural advice, action points, and welfare recommendations..."
                   value={formState.solution}
                   onChange={e => setFormState({...formState, solution: e.target.value})}
                 ></textarea>
               </div>
 
               <div className="flex gap-4 pt-4">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 text-sm font-black text-slate-500 hover:bg-slate-50 rounded-2xl transition-all uppercase tracking-widest">Discard Entry</button>
-                <button type="submit" className="flex-1 py-4 bg-rose-600 text-white rounded-2xl text-sm font-black shadow-xl shadow-rose-200 hover:bg-rose-700 transition-all uppercase tracking-widest active:scale-95">
-                  {isEditing ? 'Update Session' : 'Record Session'}
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-5 text-xs font-black text-slate-400 hover:bg-slate-50 rounded-2xl transition-all uppercase tracking-[0.2em]">Discard Draft</button>
+                <button type="submit" className="flex-1 py-5 bg-rose-600 text-white rounded-2xl text-xs font-black shadow-2xl shadow-rose-200 hover:bg-rose-700 transition-all uppercase tracking-[0.2em] active:scale-95">
+                  {isEditing ? 'Commit Changes' : 'Finalize Record'}
                 </button>
               </div>
             </form>
@@ -292,6 +317,4 @@ const CounselingView: React.FC<CounselingViewProps> = ({ activeBranchId }) => {
       )}
     </div>
   );
-};
-
-export default CounselingView;
+}
