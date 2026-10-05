@@ -1,13 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  AreaChart, Area 
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { 
-  Users, TrendingUp, HandHeart, Calendar, ArrowUpRight, ArrowDownRight,
-  Heart, Store, Mic2, Cake, MapPin, Globe, Loader2
-} from 'lucide-react';
+import { Users, TrendingUp, HandHeart, Heart, Mic2, Cake, Globe } from 'lucide-react';
 import { Member, Branch } from '../types';
 import { supabase } from '../lib/supabase';
 
@@ -17,26 +13,25 @@ interface DashboardViewProps {
   allMembers: Member[];
 }
 
-const StatWidget = ({ title, value, change, positive, icon: Icon, color = 'gold' }: any) => (
+const StatWidget = ({ title, value, subtitle, icon: Icon }: { title: string; value: string | number; subtitle?: string; icon: React.ElementType }) => (
   <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all relative overflow-hidden group">
     <div className="flex justify-between items-start mb-4 relative z-10">
-      <div className={`p-3 bg-${color}-50 text-${color}-600 rounded-2xl`}>
+      <div className="p-3 bg-gold-50 text-gold-600 rounded-2xl">
         <Icon size={24} />
       </div>
-      <div className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-tighter ${positive ? 'text-emerald-600' : 'text-rose-600'}`}>
-        {change}
-        {positive ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-      </div>
+      {subtitle && (
+        <div className="text-[10px] font-black uppercase tracking-tighter text-slate-400">{subtitle}</div>
+      )}
     </div>
     <div className="text-3xl font-black text-slate-900 relative z-10">{value}</div>
     <div className="text-slate-400 text-[9px] font-black uppercase tracking-widest mt-1 relative z-10">{title}</div>
-    <div className={`absolute -bottom-4 -right-4 w-24 h-24 bg-${color}-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full`}></div>
   </div>
 );
 
 const DashboardView: React.FC<DashboardViewProps> = ({ members, branch, allMembers }) => {
   const [financeStats, setFinanceStats] = useState({ totalBalance: 0, mtdIncome: 0 });
-  const [attendanceChart, setAttendanceChart] = useState<any[]>([]);
+  const [attendanceChart, setAttendanceChart] = useState<{ name: string; count: number }[]>([]);
+  const [todayAttendance, setTodayAttendance] = useState(0);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   const today = new Date();
@@ -55,44 +50,61 @@ const DashboardView: React.FC<DashboardViewProps> = ({ members, branch, allMembe
 
   const fetchDashboardTelemetry = async () => {
     setIsLoadingStats(true);
-    
-    // 1. Fetch Finance Totals
+
     const { data: txData } = await supabase
       .from('transactions')
-      .select('amount')
+      .select('amount, type, created_at')
       .eq('branch_id', branch.id);
-    
+
     if (txData) {
-      const total = txData.reduce((acc, curr) => acc + Number(curr.amount), 0);
-      setFinanceStats({ 
-        totalBalance: total, 
-        mtdIncome: txData.filter(t => t.amount > 0).reduce((acc, curr) => acc + Number(curr.amount), 0) 
-      });
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const incomeTypes = new Set(['Tithe', 'Offering', 'Donation', 'Special Fund', 'Store']);
+      const total = txData.reduce((acc, curr) => {
+        const amt = Number(curr.amount);
+        return incomeTypes.has(curr.type) ? acc + amt : acc - Math.abs(amt);
+      }, 0);
+      const mtdIncome = txData
+        .filter((t) => incomeTypes.has(t.type) && new Date(t.created_at) >= monthStart)
+        .reduce((acc, curr) => acc + Number(curr.amount), 0);
+      setFinanceStats({ totalBalance: total, mtdIncome });
     }
 
-    // 2. Fetch Attendance Trends (Last 6 Months)
-    // For now, using a structured fetch to simulate trend or real logs if available
     const { data: attData } = await supabase
       .from('attendance')
       .select('created_at')
       .eq('branch_id', branch.id);
-    
-    // Process chart data... (Simplified for now)
-    setAttendanceChart([
-      { name: 'Jan', count: 450 },
-      { name: 'Feb', count: 520 },
-      { name: 'Mar', count: 480 },
-      { name: 'Apr', count: 610 },
-      { name: 'May', count: 590 },
-      { name: 'Jun', count: attData?.length || 720 },
-    ]);
+
+    const months: { name: string; key: string; count: number }[] = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({
+        name: d.toLocaleString('en-US', { month: 'short' }),
+        key: `${d.getFullYear()}-${d.getMonth()}`,
+        count: 0,
+      });
+    }
+    (attData || []).forEach((row) => {
+      const d = new Date(row.created_at);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      const bucket = months.find((m) => m.key === key);
+      if (bucket) bucket.count += 1;
+    });
+    setAttendanceChart(months.map(({ name, count }) => ({ name, count })));
+    setTodayAttendance(
+      (attData || []).filter((row) => {
+        const d = new Date(row.created_at);
+        return d.toDateString() === now.toDateString();
+      }).length
+    );
 
     setIsLoadingStats(false);
   };
 
   const getPhotoSrc = (photo: string) => {
-    if (photo.startsWith('data:image')) return photo;
-    return `https://picsum.photos/seed/${photo}/100/100`;
+    if (photo?.startsWith('data:image')) return photo;
+    return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(photo || 'member')}`;
   };
 
   return (
@@ -114,14 +126,20 @@ const DashboardView: React.FC<DashboardViewProps> = ({ members, branch, allMembe
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatWidget title="Total Congregation" value={members.length.toLocaleString()} change="+4.2%" positive={true} icon={Users} color="gold" />
-        <StatWidget 
-          title="Treasury (Total)" 
-          value={isLoadingStats ? '---' : `GH₵ ${financeStats.totalBalance.toLocaleString()}`} 
-          change="+1.8%" positive={true} icon={HandHeart} color="emerald" 
+        <StatWidget title="Branch Congregation" value={members.length.toLocaleString()} subtitle="Live roster" icon={Users} />
+        <StatWidget
+          title="Treasury Balance"
+          value={isLoadingStats ? '---' : `GH₵ ${financeStats.totalBalance.toLocaleString()}`}
+          subtitle={isLoadingStats ? '…' : `MTD GH₵ ${financeStats.mtdIncome.toLocaleString()}`}
+          icon={HandHeart}
         />
-        <StatWidget title="Retention Rate" value="92%" change="-1.2%" positive={false} icon={TrendingUp} color="amber" />
-        <StatWidget title="Service Arrivals" value={attendanceChart[attendanceChart.length-1]?.count || '0'} change="+30%" positive={true} icon={Heart} color="rose" />
+        <StatWidget
+          title="Active Members"
+          value={members.filter((m) => m.status === 'Active').length.toLocaleString()}
+          subtitle={`${members.filter((m) => m.status !== 'Active').length} inactive`}
+          icon={TrendingUp}
+        />
+        <StatWidget title="Today's Check-ins" value={isLoadingStats ? '---' : todayAttendance.toLocaleString()} subtitle="Attendance kiosk" icon={Heart} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

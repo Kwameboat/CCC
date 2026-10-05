@@ -10,13 +10,16 @@ interface HeaderProps {
   activeBranchId: string;
   onBranchChange: (id: string) => void;
   onLogout: () => void;
+  userEmail?: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentView, toggleSidebar, branches, activeBranchId, onBranchChange, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ currentView, toggleSidebar, branches, activeBranchId, onBranchChange, onLogout, userEmail }) => {
   const [showBranchMenu, setShowBranchMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   
   const activeBranch = branches.find(b => b.id === activeBranchId) || branches[0];
+  const displayName = userEmail?.split('@')[0]?.replace(/[._]/g, ' ') || 'Staff';
+  const titleName = displayName.replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shrink-0 z-[100] relative">
@@ -106,11 +109,11 @@ const Header: React.FC<HeaderProps> = ({ currentView, toggleSidebar, branches, a
             className="flex items-center gap-3 pl-4 border-l border-slate-200 group h-full"
           >
             <div className="hidden md:block text-right">
-              <div className="text-sm font-bold text-slate-900">Dr. Silas Okeke</div>
-              <div className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Global SuperAdmin</div>
+              <div className="text-sm font-bold text-slate-900">{titleName}</div>
+              <div className="text-[9px] text-slate-400 font-black uppercase tracking-widest truncate max-w-[160px]">{userEmail || 'Authorized Staff'}</div>
             </div>
-            <div className="w-10 h-10 rounded-full bg-indigo-100 border-2 border-indigo-200 flex items-center justify-center text-indigo-600 overflow-hidden shadow-sm group-hover:ring-4 group-hover:ring-indigo-50 transition-all">
-              <img src="https://picsum.photos/seed/admin/100/100" alt="Admin" />
+            <div className="w-10 h-10 rounded-full bg-gold-100 border-2 border-gold-200 flex items-center justify-center text-gold-700 overflow-hidden shadow-sm group-hover:ring-4 group-hover:ring-gold-50 transition-all font-black text-sm uppercase">
+              {(userEmail || 'S').charAt(0)}
             </div>
           </button>
 
