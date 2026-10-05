@@ -242,7 +242,7 @@ const App: React.FC = () => {
       case 'members':
         return <MembersView members={members} onRefresh={fetchMembers} activeBranchId={activeBranchId} />;
       case 'finance':
-        return <FinanceView branchId={activeBranchId} />;
+        return <FinanceView branchId={activeBranchId} members={members} />;
       case 'attendance':
         return <AttendanceView members={members} onRefresh={fetchMembers} activeBranchId={activeBranchId} />;
       case 'counseling':
