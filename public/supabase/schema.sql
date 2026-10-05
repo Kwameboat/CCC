@@ -102,10 +102,12 @@ CREATE TABLE IF NOT EXISTS counseling (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 6. Transactions
+-- 6. Transactions (tithe/pledge linked to members)
 CREATE TABLE IF NOT EXISTS transactions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
+  member_id UUID REFERENCES members(id) ON DELETE SET NULL,
+  member_name TEXT,
   amount DECIMAL(12,2) NOT NULL,
   type TEXT NOT NULL,
   method TEXT NOT NULL,
@@ -116,6 +118,25 @@ CREATE TABLE IF NOT EXISTS transactions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_transactions_branch ON transactions(branch_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_transactions_member ON transactions(member_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(branch_id, type);
+
+-- 6b. Pledges / promises
+CREATE TABLE IF NOT EXISTS pledges (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
+  member_id UUID REFERENCES members(id) ON DELETE SET NULL,
+  member_name TEXT NOT NULL,
+  promised_amount DECIMAL(12,2) NOT NULL,
+  paid_amount DECIMAL(12,2) DEFAULT 0,
+  status TEXT DEFAULT 'open' CHECK (status IN ('open', 'partial', 'fulfilled')),
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  fulfilled_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_pledges_branch_status ON pledges(branch_id, status);
+CREATE INDEX IF NOT EXISTS idx_pledges_member ON pledges(member_id);
 
 -- 7. Media & logistics
 CREATE TABLE IF NOT EXISTS sermons (
@@ -198,6 +219,7 @@ ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
 ALTER TABLE attendance_alerts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE counseling ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pledges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sermons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
@@ -210,7 +232,7 @@ DECLARE
 BEGIN
   FOREACH t IN ARRAY ARRAY[
     'branches','profiles','members','services','attendance','attendance_alerts','counseling',
-    'transactions','sermons','events','products','broadcasts'
+    'transactions','pledges','sermons','events','products','broadcasts'
   ]
   LOOP
     EXECUTE format('DROP POLICY IF EXISTS "Staff Access" ON %I', t);

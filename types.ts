@@ -54,7 +54,7 @@ export interface Transaction {
   memberId?: string;
   memberName?: string;
   amount: number;
-  type: 'Tithe' | 'Offering' | 'Donation' | 'Special Fund' | 'Store';
+  type: 'Tithe' | 'Offering' | 'Donation' | 'Special Fund' | 'Store' | 'Pledge';
   method: 'Stripe' | 'PayPal' | 'Cash' | 'Bank Transfer' | 'Mobile Money';
   status: 'Completed' | 'Pending' | 'Failed';
   date: string;

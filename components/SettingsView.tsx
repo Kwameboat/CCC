@@ -54,7 +54,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     setDbStatus({
       connected: isConnected,
       tables: isConnected
-        ? ['branches', 'profiles', 'members', 'services', 'attendance', 'attendance_alerts', 'counseling', 'transactions', 'sermons', 'events', 'products', 'broadcasts']
+        ? ['branches', 'profiles', 'members', 'services', 'attendance', 'attendance_alerts', 'counseling', 'transactions', 'pledges', 'sermons', 'events', 'products', 'broadcasts']
         : [],
     });
   };
@@ -135,6 +135,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                   <li>Do not set <code className="text-gold-300">VITE_ENABLE_DEMO_LOGIN</code> in Production.</li>
                   <li>In Supabase SQL Editor, run <code className="text-gold-300">supabase/schema.sql</code> (v7.0).</li>
                   <li>For existing DBs, also run <code className="text-gold-300">supabase/migrations/003_service_attendance.sql</code> (per-service attendance + absence alerts).</li>
+                  <li>For member tithe/pledge tracking, run <code className="text-gold-300">supabase/migrations/004_member_tithe_pledge.sql</code>.</li>
                   <li>Create staff users under Supabase Authentication → Users.</li>
                   <li>Enable Realtime for the <code className="text-gold-300">attendance</code> table if kiosk live feed is needed.</li>
                   <li>Redeploy after env changes.</li>
@@ -194,7 +195,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                 </div>
                 <p className="text-sm text-slate-400 leading-relaxed">
                   Production schema lives in the repo at <span className="text-gold-400">supabase/schema.sql</span>. It creates
-                  branches, profiles, members, services, attendance, attendance_alerts, counseling, transactions, sermons, events, products, broadcasts,
+                  branches, profiles, members, services, attendance, attendance_alerts, counseling, transactions, pledges, sermons, events, products, broadcasts,
                   RLS policies, and the auth profile trigger.
                 </p>
                 <div className="flex flex-wrap gap-2">
