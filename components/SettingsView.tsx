@@ -7,6 +7,7 @@ import {
 import { Branch } from '../types';
 import { checkSupabaseConnection, supabase } from '../lib/supabase';
 import { showToast } from '../lib/toast';
+import StaffManager from './StaffManager';
 
 type SettingsSection = 'db' | 'deployment' | 'roles' | 'branches' | 'payments' | 'automations';
 
@@ -15,6 +16,7 @@ interface SettingsViewProps {
   setBranches: React.Dispatch<React.SetStateAction<Branch[]>>;
   onBranchesChanged?: () => void;
   userRole?: string;
+  currentUserId?: string;
 }
 
 const SettingsView: React.FC<SettingsViewProps> = ({
@@ -22,9 +24,11 @@ const SettingsView: React.FC<SettingsViewProps> = ({
   setBranches,
   onBranchesChanged,
   userRole = 'admin',
+  currentUserId,
 }) => {
-  const [activeSection, setActiveSection] = useState<SettingsSection>('deployment');
-  const [showSavedToast, setShowSavedToast] = useState(false);
+  const [activeSection, setActiveSection] = useState<SettingsSection>(
+    userRole === 'admin' ? 'roles' : 'deployment'
+  );  const [showSavedToast, setShowSavedToast] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [dbStatus, setDbStatus] = useState<{ connected: boolean; tables: string[] }>({
@@ -260,22 +264,30 @@ const SettingsView: React.FC<SettingsViewProps> = ({
 
       case 'roles':
         return (
-          <div className="bg-white rounded-3xl border border-slate-200 p-8 space-y-4 animate-fadeIn">
-            <h3 className="text-xl font-black uppercase tracking-tight">RBAC Security</h3>
-            <p className="text-sm text-slate-500">
-              Your current role: <span className="font-black text-gold-700 uppercase">{userRole}</span>
-            </p>
-            <p className="text-sm text-slate-500 leading-relaxed">
-              Roles live in the <code>profiles</code> table (<code>admin</code>, <code>pastor</code>, <code>finance</code>,{' '}
-              <code>kiosk</code>, <code>viewer</code>). Assign roles in Supabase or via SQL after inviting staff users.
-            </p>
-            <ul className="text-sm text-slate-600 space-y-2 list-disc list-inside">
-              <li>admin — full console access</li>
-              <li>pastor — members, counseling, sermons, events</li>
-              <li>finance — treasury ledger</li>
-              <li>kiosk — attendance only</li>
-              <li>viewer — read-only dashboards</li>
-            </ul>
+          <div className="space-y-6 animate-fadeIn">
+            <StaffManager currentUserId={currentUserId} currentUserRole={userRole} />
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 text-sm text-slate-500 leading-relaxed">
+              <p className="font-bold text-slate-800 mb-2">One-time database step</p>
+              If module checkboxes fail to save, run{' '}
+              <code className="text-gold-700">supabase/migrations/002_staff_permissions.sql</code> in the Supabase SQL Editor,
+              then refresh.
+              <button
+                type="button"
+                className="ml-3 text-gold-700 font-black uppercase text-[10px] tracking-widest hover:underline"
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/supabase/migrations/002_staff_permissions.sql');
+                    const text = await res.text();
+                    await navigator.clipboard.writeText(text);
+                    showToast('Staff permissions SQL copied.', 'success');
+                  } catch {
+                    showToast('Open supabase/migrations/002_staff_permissions.sql manually.', 'info');
+                  }
+                }}
+              >
+                Copy SQL
+              </button>
+            </div>
           </div>
         );
 
@@ -299,12 +311,12 @@ const SettingsView: React.FC<SettingsViewProps> = ({
   };
 
   const navItems = [
+    { id: 'roles', label: 'Staff & Access', icon: Shield },
     { id: 'deployment', label: 'Vercel Deployment', icon: Rocket },
     { id: 'db', label: 'Database Node', icon: Database },
     { id: 'branches', label: 'Site Architecture', icon: MapPin },
     { id: 'payments', label: 'Paystack / Hubtel', icon: Wallet },
     { id: 'automations', label: 'Logic Streams', icon: Zap },
-    { id: 'roles', label: 'RBAC Security', icon: Shield },
   ] as const;
 
   return (
