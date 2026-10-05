@@ -363,7 +363,15 @@ const MembersView: React.FC<MembersViewProps> = ({ members, onRefresh, activeBra
                 <h3 className="text-xl font-black text-slate-900 text-center leading-tight mb-1 uppercase tracking-tighter">
                   {selectedMember.name}
                 </h3>
-                <p className="text-gold-600 font-black uppercase tracking-[0.2em] text-[10px] mb-6">{selectedMember.category}</p>
+                <p className="text-gold-600 font-black uppercase tracking-[0.2em] text-[10px]">
+                  {selectedMember.category}
+                </p>
+                {/worker/i.test(selectedMember.category || '') && (
+                  <p className="text-slate-600 font-black uppercase tracking-[0.15em] text-[10px] mt-2 mb-6">
+                    {selectedMember.dept?.trim() ? selectedMember.dept : 'Department not set'}
+                  </p>
+                )}
+                {!/worker/i.test(selectedMember.category || '') && <div className="mb-6" />}
                 <div className="w-full space-y-3 pt-4 border-t border-slate-100">
                   <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-slate-400">
                     <span>Member ID</span>
