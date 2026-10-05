@@ -7,6 +7,7 @@ import {
 import { Member } from '../types';
 import { supabase } from '../lib/supabase';
 import { showToast } from '../lib/toast';
+import { fileToCompressedDataUrl } from '../lib/image';
 
 interface MembersViewProps {
   members: Member[];
@@ -166,16 +167,28 @@ const MembersView: React.FC<MembersViewProps> = ({ members, onRefresh, activeBra
     setTimeout(() => setIsGenerating(false), 2000);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 500_000) {
-      showToast('Photo must be under 500KB.', 'error');
+    if (!file.type.startsWith('image/')) {
+      showToast('Please choose an image file.', 'error');
       return;
     }
-    const reader = new FileReader();
-    reader.onloadend = () => setFormState({ ...formState, photo: reader.result as string });
-    reader.readAsDataURL(file);
+
+    try {
+      showToast('Processing photo…', 'info');
+      const dataUrl = await fileToCompressedDataUrl(file, {
+        maxEdge: 2048,
+        quality: 0.88,
+      });
+      setFormState((prev) => ({ ...prev, photo: dataUrl }));
+      showToast('Photo ready.', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Could not process that image.', 'error');
+    } finally {
+      // Allow re-selecting the same file
+      e.target.value = '';
+    }
   };
 
   const getPhotoSrc = (photo: string) => {
