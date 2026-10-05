@@ -13,7 +13,7 @@ if [[ -z "${VERCEL_TOKEN:-}" ]]; then
   exit 1
 fi
 
-URL="${VITE_SUPABASE_URL:-https://ixjdszpzbqhxxhphmtqe.supabase.co}"
+URL="${VITE_SUPABASE_URL:-https://fsfpegyvqwroeunehfml.supabase.co}"
 KEY="${VITE_SUPABASE_ANON_KEY:-}"
 
 if [[ -z "$KEY" && -f .env.local ]]; then
