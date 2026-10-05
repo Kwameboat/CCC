@@ -11,16 +11,31 @@ interface HeaderProps {
   onBranchChange: (id: string) => void;
   onLogout: () => void;
   userEmail?: string;
+  userName?: string;
+  userRole?: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentView, toggleSidebar, branches, activeBranchId, onBranchChange, onLogout, userEmail }) => {
+const Header: React.FC<HeaderProps> = ({
+  currentView,
+  toggleSidebar,
+  branches,
+  activeBranchId,
+  onBranchChange,
+  onLogout,
+  userEmail,
+  userName,
+  userRole,
+}) => {
   const [showBranchMenu, setShowBranchMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  
-  const activeBranch = branches.find(b => b.id === activeBranchId) || branches[0];
-  const displayName = userEmail?.split('@')[0]?.replace(/[._]/g, ' ') || 'Staff';
-  const titleName = displayName.replace(/\b\w/g, (c) => c.toUpperCase());
 
+  const activeBranch = branches.find((b) => b.id === activeBranchId) || branches[0];
+  const displayName =
+    userName ||
+    userEmail?.split('@')[0]?.replace(/[._]/g, ' ') ||
+    'Staff';
+  const titleName = displayName.replace(/\b\w/g, (c) => c.toUpperCase());
+  const roleLabel = (userRole || 'staff').replace(/_/g, ' ');
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shrink-0 z-[100] relative">
       <div className="flex items-center gap-4">
@@ -110,7 +125,9 @@ const Header: React.FC<HeaderProps> = ({ currentView, toggleSidebar, branches, a
           >
             <div className="hidden md:block text-right">
               <div className="text-sm font-bold text-slate-900">{titleName}</div>
-              <div className="text-[9px] text-slate-400 font-black uppercase tracking-widest truncate max-w-[160px]">{userEmail || 'Authorized Staff'}</div>
+              <div className="text-[9px] text-slate-400 font-black uppercase tracking-widest truncate max-w-[160px]">
+                {roleLabel} · {userEmail || 'Authorized Staff'}
+              </div>
             </div>
             <div className="w-10 h-10 rounded-full bg-gold-100 border-2 border-gold-200 flex items-center justify-center text-gold-700 overflow-hidden shadow-sm group-hover:ring-4 group-hover:ring-gold-50 transition-all font-black text-sm uppercase">
               {(userEmail || 'S').charAt(0)}

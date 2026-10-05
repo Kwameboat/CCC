@@ -14,7 +14,7 @@ import CommunicationView from './components/CommunicationView';
 import SettingsView from './components/SettingsView';
 import CounselingView from './components/CounselingView';
 import LoginView from './components/LoginView';
-import { supabase } from './lib/supabase';
+import { supabase, hasSupabaseConfig } from './lib/supabase';
 import { showToast } from './lib/toast';
 import { View, Member, Branch } from './types';
 
@@ -23,6 +23,20 @@ type AppSession = Session | { user: { email?: string; id: string }; isDemo: true
 const DEFAULT_BRANCHES: Branch[] = [
   { id: 'hq-01', name: 'CCC Global HQ', location: 'Accra, Ghana', code: 'HQ-ACC', isHQ: true, timezone: 'GMT' }
 ];
+
+const ConfigMissingScreen = () => (
+  <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-8">
+    <div className="max-w-lg space-y-5 text-center">
+      <h1 className="text-3xl font-black uppercase tracking-tight text-gold-400">Configuration Required</h1>
+      <p className="text-slate-400 text-sm leading-relaxed">
+        Set <code className="text-gold-300">VITE_SUPABASE_URL</code> and{' '}
+        <code className="text-gold-300">VITE_SUPABASE_ANON_KEY</code> in <code className="text-white">.env.local</code> locally
+        and in the Vercel project environment variables for production.
+      </p>
+      <p className="text-xs text-slate-500 font-medium">See <code className="text-slate-300">.env.example</code> and <code className="text-slate-300">supabase/schema.sql</code>.</p>
+    </div>
+  </div>
+);
 
 const App: React.FC = () => {
   const [session, setSession] = useState<AppSession | null>(null);
@@ -33,8 +47,15 @@ const App: React.FC = () => {
   const [activeBranchId, setActiveBranchId] = useState<string>('');
   const [members, setMembers] = useState<Member[]>([]);
   const [dataError, setDataError] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string>('admin');
+  const [userName, setUserName] = useState<string>('');
 
   useEffect(() => {
+    if (!hasSupabaseConfig) {
+      setLoading(false);
+      return;
+    }
+
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       if (currentSession) setSession(currentSession);
       setLoading(false);
@@ -49,14 +70,24 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session || !hasSupabaseConfig) return;
     if ('isDemo' in session && session.isDemo) {
       setDataError('Demo session: cloud writes require a real Supabase login.');
+      setUserName(session.user.email || 'Demo');
+      setUserRole('viewer');
       return;
     }
     fetchInitialData();
+    loadProfile(session.user.id);
   }, [session]);
 
+  const loadProfile = async (userId: string) => {
+    const { data } = await supabase.from('profiles').select('full_name, role').eq('id', userId).maybeSingle();
+    if (data) {
+      setUserRole(data.role || 'admin');
+      setUserName(data.full_name || '');
+    }
+  };
   const fetchInitialData = async () => {
     setDataError(null);
     const { data: branchData, error: branchError } = await supabase
@@ -127,6 +158,10 @@ const App: React.FC = () => {
       ? session.user?.email || ('isDemo' in session ? 'demo@charis.org' : 'Staff')
       : 'Staff';
 
+  if (!hasSupabaseConfig) {
+    return <ConfigMissingScreen />;
+  }
+
   if (loading) {
     return (
       <div className="h-screen w-screen bg-black flex items-center justify-center">
@@ -165,7 +200,14 @@ const App: React.FC = () => {
       case 'cms':
         return <CMSView />;
       case 'settings':
-        return <SettingsView branches={branches} setBranches={setBranches} />;
+        return (
+          <SettingsView
+            branches={branches}
+            setBranches={setBranches}
+            onBranchesChanged={fetchInitialData}
+            userRole={userRole}
+          />
+        );
       default:
         return (
           <div className="p-8 text-slate-400 font-bold uppercase tracking-widest text-center py-20 bg-white rounded-[3rem] border border-slate-200 border-dashed">
@@ -192,6 +234,8 @@ const App: React.FC = () => {
           activeBranchId={activeBranchId}
           onBranchChange={setActiveBranchId}
           userEmail={userEmail}
+          userName={userName || undefined}
+          userRole={userRole}
           onLogout={async () => {
             if (!('isDemo' in session)) await supabase.auth.signOut();
             setSession(null);

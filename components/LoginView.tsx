@@ -208,7 +208,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
             <div className="mt-10 pt-6 border-t border-slate-50 flex items-center justify-center gap-2">
               <ShieldCheck size={16} className="text-gold-500" />
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">CCC Infrastructure v4.2.0 Production</span>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">CCC Infrastructure v4.3.0 Production</span>
             </div>
           </div>
         </div>

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Send, Mail, MessageSquare, History, Cake, Zap, Settings } from 'lucide-react';
 import { Member } from '../types';
 import { showToast } from '../lib/toast';
+import { supabase } from '../lib/supabase';
 
 interface CommunicationViewProps {
   members: Member[];
@@ -63,7 +64,7 @@ const CommunicationView: React.FC<CommunicationViewProps> = ({ members }) => {
     return activeMembers.length;
   }, [composerData.target, activeMembers]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!composerData.subject.trim() || !composerData.content.trim()) {
       showToast('Subject and message are required.', 'error');
       return;
@@ -82,18 +83,34 @@ const CommunicationView: React.FC<CommunicationViewProps> = ({ members }) => {
     const entry: Broadcast = {
       id: crypto.randomUUID(),
       subject: composerData.subject.trim(),
-      type: channel.includes('SMS') && !channel.includes('Email') ? 'SMS' : channel.includes('Email') && !channel.includes('SMS') ? 'Email' : 'Email',
+      type: channel.includes('SMS') && !channel.includes('Email') ? 'SMS' : 'Email',
       recipients: recipientCount,
       status: 'Queued',
       date: new Date().toLocaleString(),
       content: composerData.content.trim(),
     };
 
+    const { error } = await supabase.from('broadcasts').insert([
+      {
+        subject: entry.subject,
+        content: entry.content,
+        channel: entry.type,
+        target_group: composerData.target,
+        recipient_count: recipientCount,
+        status: 'Queued',
+      },
+    ]);
+
+    if (error) {
+      // Table may not exist yet — keep local queue so ops still work
+      console.warn('broadcasts insert:', error.message);
+    }
+
     persist([entry, ...broadcasts]);
     setComposerData({ ...composerData, subject: '', content: '' });
     setActiveTab('broadcasts');
     showToast(
-      `Broadcast queued for ${recipientCount} member(s). Connect an SMS/email provider in Settings to deliver.`,
+      `Broadcast queued for ${recipientCount} member(s). Connect an SMS/email provider to deliver.`,
       'success'
     );
   };

@@ -1,73 +1,75 @@
 # Charis Christian Center Console (CCC)
 
-Production church management console for Charis Christian Center — multi-branch admin, members, finance, attendance, counseling, store, sermons, events, communications, and CMS.
+Production church management console for Charis Christian Center.
 
 **Live:** https://ccc-neon-nu.vercel.app  
 **Repo:** https://github.com/Kwameboat/CCC
 
 ## Features
 
-| Module | Status |
-|--------|--------|
-| **Login & sessions** | Supabase Auth (password reset supported). Demo login only in local/dev. |
-| **Dashboard** | Live member counts, treasury totals, MTD income, today check-ins, 6-month attendance chart, birthdays |
-| **Members** | Branch-scoped CRUD, photo, ID card print, CSV export |
-| **Finance** | Income/expense ledger via Supabase |
-| **Attendance** | Check-in + realtime kiosk / first-timer registration |
-| **Counseling** | Session notes CRUD with follow-up status |
-| **Store** | Product inventory CRUD (Supabase `products`) |
-| **Sermons** | Branch sermon library CRUD |
-| **Events** | Branch event scheduling CRUD |
-| **Communication** | Composer + birthday list; broadcasts queued until SMS/email provider is wired |
-| **CMS** | Page drafts (session-gated; browser-persisted until CMS backend) |
-| **Settings** | DB health check, schema script, deployment notes |
+| Module | Capability |
+|--------|------------|
+| Login | Supabase Auth + password reset (demo login local/dev only) |
+| Dashboard | Live members, treasury, MTD income, today’s check-ins, attendance chart, birthdays |
+| Members | Branch CRUD, photos, ID cards, CSV export |
+| Finance | Ledger + CSV export |
+| Attendance | Check-in, kiosk, realtime feed |
+| Counseling | Confidential session notes |
+| Store / Sermons / Events | Supabase CRUD |
+| Communication | Audience targeting + broadcast queue (+ optional `broadcasts` table) |
+| CMS | Session-gated page drafts |
+| Settings | Deploy checklist, schema health, campus registration, RBAC docs |
 
-## Stack
+## Production setup (required)
 
-- React 19 + TypeScript + Vite
-- Supabase (Auth, Postgres, Realtime)
-- Recharts + Lucide
-- Vercel SPA hosting (`vercel.json` rewrites + security headers)
+1. **Supabase**
+   - Run [`supabase/schema.sql`](supabase/schema.sql) in the SQL Editor (v7.0).
+   - Create staff users in Authentication → Users.
+   - Enable Realtime on `attendance` if using the live kiosk feed.
 
-## Local setup
+2. **Environment variables** (local `.env.local` and Vercel Production/Preview)
 
-1. **Node.js 18+**
-2. Install deps: `npm install`
-3. Copy env: `cp .env.example .env.local` and set:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-4. In Supabase SQL Editor, run the schema from **Settings → Database** (or the script embedded in `SettingsView`).
-5. Create staff users in Supabase Auth (email/password).
-6. Run: `npm run dev` → http://localhost:3000
+```bash
+VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+# Never enable on Vercel Production:
+# VITE_ENABLE_DEMO_LOGIN=true
+```
 
-Optional local demo login: set `VITE_ENABLE_DEMO_LOGIN=true` (never on Vercel production).
+3. **Vercel**
+   - Connect this repo (already live at `ccc-neon-nu.vercel.app`).
+   - Set the two `VITE_*` vars above.
+   - Redeploy after saving env vars.
 
-## Production (Vercel)
+4. **Verify**
+   - `npm run build` succeeds.
+   - Login with a real Supabase user.
+   - Confirm Dashboard / Members / Finance load for a branch.
 
-1. Connect the GitHub repo (already linked for https://ccc-neon-nu.vercel.app).
-2. Project → Settings → Environment Variables:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-3. Do **not** set `VITE_ENABLE_DEMO_LOGIN` in production.
-4. Redeploy after env changes.
-5. Rotate the anon key if it was previously committed, then update Vercel + `.env.local`.
+## Local development
 
-## Security checklist
-
-- [ ] Env vars set on Vercel (no reliance on source fallbacks)
-- [ ] Demo login disabled in production
-- [ ] Supabase RLS reviewed (tighten beyond “all authenticated” for finance/counseling when ready)
-- [ ] Staff accounts created only via Supabase Auth
-- [ ] Prefer Supabase Storage for member photos instead of large base64 in rows
+```bash
+cp .env.example .env.local   # then fill values
+npm install
+npm run dev                  # http://localhost:3000
+```
 
 ## Scripts
 
 ```bash
-npm run dev      # local development
-npm run build    # typecheck + production build
-npm run preview  # preview dist/
+npm run dev
+npm run build
+npm run preview
 ```
+
+## Security notes
+
+- Secrets must live in env vars — the app refuses to boot without them.
+- Demo login is disabled unless `import.meta.env.DEV` or `VITE_ENABLE_DEMO_LOGIN=true`.
+- RLS currently allows all authenticated staff; tighten per `profiles.role` when you need stricter isolation.
+- Payment provider secret keys must only live in Edge Functions, never the browser.
+- Prefer Supabase Storage for member photos instead of large base64 strings.
 
 ## Version
 
-`4.2.0` — production hardening: env config, all modules wired, real dashboard metrics, auth hardening.
+`4.3.0` — full production readiness pass.
