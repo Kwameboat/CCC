@@ -44,18 +44,51 @@ CREATE TABLE IF NOT EXISTS members (
 CREATE INDEX IF NOT EXISTS idx_members_branch ON members(branch_id);
 CREATE INDEX IF NOT EXISTS idx_members_phone ON members(phone);
 
--- 4. Attendance
+-- 4. Services (per-service attendance sessions)
+CREATE TABLE IF NOT EXISTS services (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  service_date DATE NOT NULL,
+  service_time TIME,
+  status TEXT DEFAULT 'open' CHECK (status IN ('open', 'closed')),
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  closed_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_services_branch_date ON services(branch_id, service_date DESC);
+
+-- 5. Attendance
 CREATE TABLE IF NOT EXISTS attendance (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
+  service_id UUID REFERENCES services(id) ON DELETE SET NULL,
   member_id UUID REFERENCES members(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
   method TEXT DEFAULT 'Kiosk',
   is_first_timer BOOLEAN DEFAULT false,
+  visitor_status TEXT DEFAULT 'member',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_attendance_branch_created ON attendance(branch_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_attendance_service ON attendance(service_id);
+
+-- 5b. Consecutive-absence alerts
+CREATE TABLE IF NOT EXISTS attendance_alerts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
+  member_id UUID REFERENCES members(id) ON DELETE CASCADE,
+  member_name TEXT NOT NULL,
+  alert_type TEXT DEFAULT 'consecutive_absence',
+  miss_count INTEGER DEFAULT 3,
+  details TEXT,
+  status TEXT DEFAULT 'open' CHECK (status IN ('open', 'acknowledged', 'resolved')),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_alerts_branch_status ON attendance_alerts(branch_id, status);
 
 -- 5. Counseling
 CREATE TABLE IF NOT EXISTS counseling (
@@ -160,7 +193,9 @@ CREATE TRIGGER on_auth_user_created
 ALTER TABLE branches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE services ENABLE ROW LEVEL SECURITY;
 ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
+ALTER TABLE attendance_alerts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE counseling ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sermons ENABLE ROW LEVEL SECURITY;
@@ -174,7 +209,7 @@ DECLARE
   t TEXT;
 BEGIN
   FOREACH t IN ARRAY ARRAY[
-    'branches','profiles','members','attendance','counseling',
+    'branches','profiles','members','services','attendance','attendance_alerts','counseling',
     'transactions','sermons','events','products','broadcasts'
   ]
   LOOP
@@ -200,6 +235,10 @@ DO $$
 BEGIN
   BEGIN
     ALTER PUBLICATION supabase_realtime ADD TABLE attendance;
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END;
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE services;
   EXCEPTION WHEN duplicate_object THEN NULL;
   END;
 END $$;
