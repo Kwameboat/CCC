@@ -17,6 +17,13 @@ import LoginView from './components/LoginView';
 import { supabase, hasSupabaseConfig } from './lib/supabase';
 import { showToast } from './lib/toast';
 import { View, Member, Branch } from './types';
+import {
+  AppModule,
+  canAccessModule,
+  defaultLandingView,
+  modulesForRole,
+  StaffRole,
+} from './lib/permissions';
 
 type AppSession = Session | { user: { email?: string; id: string }; isDemo: true };
 
@@ -49,6 +56,8 @@ const App: React.FC = () => {
   const [dataError, setDataError] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string>('admin');
   const [userName, setUserName] = useState<string>('');
+  const [userPermissions, setUserPermissions] = useState<string[]>([]);
+  const [accessReady, setAccessReady] = useState(false);
 
   useEffect(() => {
     if (!hasSupabaseConfig) {
@@ -75,18 +84,57 @@ const App: React.FC = () => {
       setDataError('Demo session: cloud writes require a real Supabase login.');
       setUserName(session.user.email || 'Demo');
       setUserRole('viewer');
+      setUserPermissions(modulesForRole('viewer'));
+      setCurrentView(defaultLandingView('viewer'));
+      setAccessReady(true);
       return;
     }
     fetchInitialData();
-    loadProfile(session.user.id);
+    loadProfile(session.user.id, session.user.email);
   }, [session]);
 
-  const loadProfile = async (userId: string) => {
-    const { data } = await supabase.from('profiles').select('full_name, role').eq('id', userId).maybeSingle();
-    if (data) {
-      setUserRole(data.role || 'admin');
-      setUserName(data.full_name || '');
+  const loadProfile = async (userId: string, email?: string | null) => {
+    setAccessReady(false);
+    let { data, error } = await supabase
+      .from('profiles')
+      .select('full_name, role, permissions, is_active, email')
+      .eq('id', userId)
+      .maybeSingle();
+
+    // Bootstrap profile for first sign-ins (e.g. first admin created in dashboard)
+    if (!data && !error) {
+      const { count } = await supabase.from('profiles').select('id', { count: 'exact', head: true });
+      const bootstrapRole: StaffRole = !count || count === 0 ? 'admin' : 'viewer';
+      await supabase.from('profiles').upsert({
+        id: userId,
+        full_name: email?.split('@')[0] || 'Staff',
+        email: email || null,
+        role: bootstrapRole,
+        permissions: modulesForRole(bootstrapRole),
+        is_active: true,
+      });
+      ({ data } = await supabase
+        .from('profiles')
+        .select('full_name, role, permissions, is_active, email')
+        .eq('id', userId)
+        .maybeSingle());
     }
+
+    if (data && data.is_active === false) {
+      showToast('Your staff account is deactivated. Contact an administrator.', 'error');
+      await supabase.auth.signOut();
+      setSession(null);
+      setAccessReady(true);
+      return;
+    }
+
+    const role = (data?.role || 'admin') as StaffRole;
+    const perms = modulesForRole(role, data?.permissions);
+    setUserRole(role);
+    setUserName(data?.full_name || '');
+    setUserPermissions(perms);
+    setCurrentView((prev) => (canAccessModule(prev as AppModule, role, perms) ? prev : defaultLandingView(role, perms)));
+    setAccessReady(true);
   };
   const fetchInitialData = async () => {
     setDataError(null);
@@ -178,6 +226,16 @@ const App: React.FC = () => {
   }
 
   const renderContent = () => {
+    const view = currentView as AppModule;
+    if (!canAccessModule(view, userRole, userPermissions)) {
+      return (
+        <div className="p-8 text-center bg-white rounded-[3rem] border border-rose-100">
+          <h3 className="text-lg font-black uppercase text-rose-600 mb-2">Access Denied</h3>
+          <p className="text-sm text-slate-500">Your role does not include this module. Ask an administrator to grant access.</p>
+        </div>
+      );
+    }
+
     switch (currentView) {
       case 'dashboard':
         return <DashboardView members={activeBranchMembers} branch={activeBranch as Branch} allMembers={members} />;
@@ -206,6 +264,7 @@ const App: React.FC = () => {
             setBranches={setBranches}
             onBranchesChanged={fetchInitialData}
             userRole={userRole}
+            currentUserId={!('isDemo' in session) ? session.user.id : undefined}
           />
         );
       default:
@@ -217,6 +276,17 @@ const App: React.FC = () => {
     }
   };
 
+  if (!accessReady && session && !('isDemo' in session)) {
+    return (
+      <div className="h-screen w-screen bg-black flex items-center justify-center">
+        <div className="text-gold-500 animate-pulse font-black uppercase tracking-[0.5em] flex flex-col items-center gap-4">
+          <div className="w-16 h-16 border-4 border-gold-500/20 border-t-gold-500 rounded-full animate-spin"></div>
+          Loading staff access...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden animate-fadeIn">
       <Sidebar
@@ -224,6 +294,8 @@ const App: React.FC = () => {
         onViewChange={setCurrentView}
         isOpen={isSidebarOpen}
         toggle={() => setIsSidebarOpen(!isSidebarOpen)}
+        userRole={userRole}
+        permissions={userPermissions}
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
