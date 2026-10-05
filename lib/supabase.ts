@@ -1,33 +1,37 @@
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-import { createClient } from '@supabase/supabase-js';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL?.trim() || '';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() || '';
 
-/**
- * CHARIS INFRASTRUCTURE: PRODUCTION SUPABASE CLIENT
- * 
- * Connected to Project: ixjdszpzbqhxxhphmtqe
- */
+export const hasSupabaseConfig = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
-const SUPABASE_URL = 'https://ixjdszpzbqhxxhphmtqe.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4amRzenB6dGJxaHhocGhtdHFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0MTkwNDQsImV4cCI6MjA4MTk5NTA0NH0.CrzGi9YLIT7f7dG3USKAMIGKNVkhpQUF6Q75C107q3E';
+if (!hasSupabaseConfig) {
+  console.error(
+    'CCC: Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY. Copy .env.example to .env.local and set Vercel env vars.'
+  );
+}
 
-console.info("CCC CLOUD: PRODUCTION NODE ACTIVE");
+export const supabase: SupabaseClient = createClient(
+  SUPABASE_URL || 'https://placeholder.supabase.co',
+  SUPABASE_ANON_KEY || 'placeholder-key',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  }
+);
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-});
-
-/**
- * DATABASE HEALTH AUDIT
- */
-export const checkSupabaseConnection = async () => {
+export const checkSupabaseConnection = async (): Promise<boolean> => {
+  if (!hasSupabaseConfig) return false;
   try {
-    // Check if the branches table exists and is accessible
     const { error } = await supabase.from('branches').select('id').limit(1);
     return !error;
-  } catch (e) {
+  } catch {
     return false;
   }
 };
+
+export const isDemoLoginEnabled = (): boolean =>
+  import.meta.env.DEV === true || import.meta.env.VITE_ENABLE_DEMO_LOGIN === 'true';

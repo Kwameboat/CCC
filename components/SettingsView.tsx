@@ -1,157 +1,45 @@
-
-import React, { useState, useEffect } from 'react';
-import { 
-  Shield, Globe, Bell, CreditCard, LayoutGrid, Save, Church, CheckCircle2, 
-  Zap, Mail, MessageSquare, Loader2, MapPin, Plus, Trash2, Edit2, X, 
-  ChevronRight, Clock, ShieldAlert, Cpu, Key, 
-  Eye, EyeOff, Smartphone, Landmark, Wallet, Layers, Lock, Terminal, Activity,
-  Server, Database, Filter, Sliders, Settings, ToggleLeft, ToggleRight,
-  Calendar, ShoppingBag, Mic2, Copy, Check, Github, ExternalLink, Rocket, ShieldCheck, Cloud
+import React, { useEffect, useState } from 'react';
+import {
+  Shield, Zap, Loader2, MapPin, Plus, Church, CheckCircle2, Activity,
+  Terminal, Copy, Check, ExternalLink, Rocket, ShieldCheck, Cloud,
+  Database, Wallet, ChevronRight, Save, X
 } from 'lucide-react';
 import { Branch } from '../types';
-import { checkSupabaseConnection } from '../lib/supabase';
+import { checkSupabaseConnection, supabase } from '../lib/supabase';
+import { showToast } from '../lib/toast';
 
-type SettingsSection = 'general' | 'db' | 'deployment' | 'roles' | 'notifications' | 'finance' | 'modules' | 'automations' | 'branches' | 'payments';
+type SettingsSection = 'db' | 'deployment' | 'roles' | 'branches' | 'payments' | 'automations';
 
 interface SettingsViewProps {
   branches: Branch[];
   setBranches: React.Dispatch<React.SetStateAction<Branch[]>>;
+  onBranchesChanged?: () => void;
+  userRole?: string;
 }
 
-const SettingsView: React.FC<SettingsViewProps> = ({ branches, setBranches }) => {
-  const [activeSection, setActiveSection] = useState<SettingsSection>('db');
+const SettingsView: React.FC<SettingsViewProps> = ({
+  branches,
+  setBranches,
+  onBranchesChanged,
+  userRole = 'admin',
+}) => {
+  const [activeSection, setActiveSection] = useState<SettingsSection>('deployment');
   const [showSavedToast, setShowSavedToast] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  const [dbStatus, setDbStatus] = useState<{connected: boolean, tables: string[]}>({ connected: false, tables: [] });
-  
-  const sqlScript = `-- CHARIS CHRISTIAN CENTER: MASTER PRODUCTION SCHEMA v6.0
--- Run this in your Supabase SQL Editor to fully activate your Global Cloud Node.
-
--- 0. Extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- 1. Branches Table (Architecture)
-CREATE TABLE IF NOT EXISTS branches (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name TEXT NOT NULL,
-  location TEXT NOT NULL,
-  code TEXT UNIQUE NOT NULL,
-  is_hq BOOLEAN DEFAULT false,
-  timezone TEXT DEFAULT 'GMT',
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 2. Members Table (Congregation)
-CREATE TABLE IF NOT EXISTS members (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  email TEXT,
-  phone TEXT NOT NULL,
-  category TEXT DEFAULT 'Member',
-  dept TEXT,
-  status TEXT DEFAULT 'Active',
-  photo_url TEXT,
-  dob DATE,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 3. Attendance Table (Kiosk Logs)
-CREATE TABLE IF NOT EXISTS attendance (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
-  member_id UUID REFERENCES members(id) ON DELETE SET NULL,
-  name TEXT NOT NULL,
-  method TEXT DEFAULT 'Kiosk',
-  is_first_timer BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 4. Counseling Table (Welfare)
-CREATE TABLE IF NOT EXISTS counseling (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
-  person_name TEXT NOT NULL,
-  problem TEXT NOT NULL,
-  solution TEXT,
-  follow_up_status TEXT DEFAULT 'Pending',
-  counselor TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 5. Transactions Table (Finance)
-CREATE TABLE IF NOT EXISTS transactions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
-  amount DECIMAL(12,2) NOT NULL,
-  type TEXT NOT NULL, -- Tithe, Offering, etc.
-  method TEXT NOT NULL, -- Mobile Money, Bank, etc.
-  status TEXT DEFAULT 'Completed',
-  description TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 6. Media & Logistics
-CREATE TABLE IF NOT EXISTS sermons (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  preacher TEXT NOT NULL,
-  type TEXT DEFAULT 'Video',
-  views_count INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS events (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  event_date DATE NOT NULL,
-  event_time TIME NOT NULL,
-  location TEXT NOT NULL,
-  status TEXT DEFAULT 'Upcoming',
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS products (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name TEXT NOT NULL,
-  sku TEXT UNIQUE NOT NULL,
-  price DECIMAL(10,2) NOT NULL,
-  stock_quantity INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 7. Initial Seed: Register HQ
-INSERT INTO branches (name, location, code, is_hq) 
-VALUES ('CCC Global HQ', 'Accra, Ghana', 'HQ-ACC', true)
-ON CONFLICT (code) DO NOTHING;
-
--- 8. Security: Row Level Security (RLS)
-ALTER TABLE branches ENABLE ROW LEVEL SECURITY;
-ALTER TABLE members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
-ALTER TABLE counseling ENABLE ROW LEVEL SECURITY;
-ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sermons ENABLE ROW LEVEL SECURITY;
-ALTER TABLE events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE products ENABLE ROW LEVEL SECURITY;
-
--- 9. Security: Auth Policy (Allow Authenticated Staff)
-DO $$ 
-BEGIN
-    EXECUTE 'CREATE POLICY "Staff Access" ON branches FOR ALL TO authenticated USING (true)';
-    EXECUTE 'CREATE POLICY "Staff Access" ON members FOR ALL TO authenticated USING (true)';
-    EXECUTE 'CREATE POLICY "Staff Access" ON attendance FOR ALL TO authenticated USING (true)';
-    EXECUTE 'CREATE POLICY "Staff Access" ON counseling FOR ALL TO authenticated USING (true)';
-    EXECUTE 'CREATE POLICY "Staff Access" ON transactions FOR ALL TO authenticated USING (true)';
-    EXECUTE 'CREATE POLICY "Staff Access" ON sermons FOR ALL TO authenticated USING (true)';
-    EXECUTE 'CREATE POLICY "Staff Access" ON events FOR ALL TO authenticated USING (true)';
-    EXECUTE 'CREATE POLICY "Staff Access" ON products FOR ALL TO authenticated USING (true)';
-EXCEPTION WHEN others THEN NULL;
-END $$;`;
+  const [dbStatus, setDbStatus] = useState<{ connected: boolean; tables: string[] }>({
+    connected: false,
+    tables: [],
+  });
+  const [branchModalOpen, setBranchModalOpen] = useState(false);
+  const [branchSaving, setBranchSaving] = useState(false);
+  const [branchForm, setBranchForm] = useState({
+    name: '',
+    location: '',
+    code: '',
+    timezone: 'GMT',
+    isHQ: false,
+  });
 
   useEffect(() => {
     verifyConnection();
@@ -159,17 +47,67 @@ END $$;`;
 
   const verifyConnection = async () => {
     const isConnected = await checkSupabaseConnection();
-    if (isConnected) {
-      setDbStatus({ connected: true, tables: ['branches', 'members', 'attendance', 'counseling', 'transactions', 'sermons', 'events', 'products'] });
-    } else {
-      setDbStatus({ connected: false, tables: [] });
+    setDbStatus({
+      connected: isConnected,
+      tables: isConnected
+        ? ['branches', 'profiles', 'members', 'attendance', 'counseling', 'transactions', 'sermons', 'events', 'products', 'broadcasts']
+        : [],
+    });
+  };
+
+  const handleCopySchema = async () => {
+    try {
+      const res = await fetch('/supabase/schema.sql');
+      if (res.ok) {
+        const text = await res.text();
+        await navigator.clipboard.writeText(text);
+      } else {
+        await navigator.clipboard.writeText(
+          'Open supabase/schema.sql in the repository and run it in the Supabase SQL Editor.'
+        );
+      }
+      setIsCopied(true);
+      showToast('Schema instructions copied.', 'success');
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      showToast('Copy failed. Open supabase/schema.sql manually.', 'error');
     }
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(sqlScript);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
+  const handleRegisterCampus = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBranchSaving(true);
+    const { data, error } = await supabase
+      .from('branches')
+      .insert([
+        {
+          name: branchForm.name.trim(),
+          location: branchForm.location.trim(),
+          code: branchForm.code.trim().toUpperCase(),
+          timezone: branchForm.timezone.trim() || 'GMT',
+          is_hq: branchForm.isHQ,
+        },
+      ])
+      .select('*')
+      .single();
+    setBranchSaving(false);
+    if (error) {
+      showToast(error.message, 'error');
+      return;
+    }
+    const mapped: Branch = {
+      id: data.id,
+      name: data.name,
+      location: data.location,
+      code: data.code,
+      isHQ: data.is_hq,
+      timezone: data.timezone || 'GMT',
+    };
+    setBranches((prev) => [...prev, mapped]);
+    setBranchModalOpen(false);
+    setBranchForm({ name: '', location: '', code: '', timezone: 'GMT', isHQ: false });
+    showToast('Campus registered.', 'success');
+    onBranchesChanged?.();
   };
 
   const renderSection = () => {
@@ -178,36 +116,34 @@ END $$;`;
         return (
           <div className="space-y-6 animate-fadeIn">
             <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white relative overflow-hidden shadow-2xl border border-white/10">
-              <div className="relative z-10">
-                <div className="flex items-center gap-3 mb-6">
-                   <div className="p-3 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20">
-                      <Rocket size={24} className="text-gold-400" />
-                   </div>
-                   <h3 className="text-xl font-black uppercase tracking-tight">Vercel Deployment Guide</h3>
+              <div className="relative z-10 space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-white/10 rounded-2xl border border-white/20">
+                    <Rocket size={24} className="text-gold-400" />
+                  </div>
+                  <h3 className="text-xl font-black uppercase tracking-tight">Production Launch Checklist</h3>
                 </div>
-                <p className="text-slate-300 text-sm font-medium leading-relaxed max-w-xl mb-8">
-                  Your project is live at <span className="text-gold-400">ccc-neon-nu.vercel.app</span>. Vercel masks your API keys and ensures 99.9% availability for your payment webhooks.
+                <p className="text-slate-300 text-sm font-medium leading-relaxed max-w-xl">
+                  Live URL: <span className="text-gold-400">https://ccc-neon-nu.vercel.app</span>
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
-                     <div className="text-[10px] font-black uppercase tracking-widest text-gold-400 mb-2">Build Status</div>
-                     <p className="text-[11px] text-emerald-400 font-black leading-snug">SUCCESS: PRODUCTION NODE LIVE</p>
-                  </div>
-                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
-                     <div className="text-[10px] font-black uppercase tracking-widest text-gold-400 mb-2">Region</div>
-                     <p className="text-[11px] text-slate-400 leading-snug">Automatic Edge Routing Active.</p>
-                  </div>
-                </div>
-                <a 
-                  href="https://vercel.com/dashboard" 
-                  target="_blank" 
+                <ol className="space-y-3 text-sm text-slate-300 list-decimal list-inside">
+                  <li>In Vercel → Project → Settings → Environment Variables, set <code className="text-gold-300">VITE_SUPABASE_URL</code> and <code className="text-gold-300">VITE_SUPABASE_ANON_KEY</code>.</li>
+                  <li>Do not set <code className="text-gold-300">VITE_ENABLE_DEMO_LOGIN</code> in Production.</li>
+                  <li>In Supabase SQL Editor, run <code className="text-gold-300">supabase/schema.sql</code> (v7.0).</li>
+                  <li>Create staff users under Supabase Authentication → Users.</li>
+                  <li>Enable Realtime for the <code className="text-gold-300">attendance</code> table if kiosk live feed is needed.</li>
+                  <li>Redeploy after env changes.</li>
+                </ol>
+                <a
+                  href="https://vercel.com/dashboard"
+                  target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-2 px-8 py-3 bg-gold-500 text-black rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-gold-600 transition-all shadow-xl shadow-gold-900/20"
+                  className="inline-flex items-center gap-2 px-8 py-3 bg-gold-500 text-black rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-gold-600"
                 >
-                  Manage Deployment <ExternalLink size={14} />
+                  Open Vercel Dashboard <ExternalLink size={14} />
                 </a>
               </div>
-              <Cloud className="absolute -bottom-10 -right-10 w-64 h-64 text-white/5 animate-pulse" />
+              <Cloud className="absolute -bottom-10 -right-10 w-64 h-64 text-white/5" />
             </div>
           </div>
         );
@@ -219,42 +155,54 @@ END $$;`;
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-6 border-b border-slate-100">
                 <div>
                   <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Cloud Provisioning</h3>
-                  <p className="text-sm text-slate-500 font-medium">Initialize your Postgres tables on the Supabase Cloud Node.</p>
+                  <p className="text-sm text-slate-500 font-medium">Apply <code>supabase/schema.sql</code> in the Supabase SQL Editor.</p>
                 </div>
-                <div className={`flex items-center gap-3 px-6 py-3 rounded-2xl border transition-all ${dbStatus.connected ? 'bg-emerald-50 border-emerald-100 text-emerald-700 shadow-lg' : 'bg-rose-50 border-rose-100 text-rose-700 shadow-lg'}`}>
+                <div
+                  className={`flex items-center gap-3 px-6 py-3 rounded-2xl border ${
+                    dbStatus.connected
+                      ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                      : 'bg-rose-50 border-rose-100 text-rose-700'
+                  }`}
+                >
                   <Activity size={20} className={dbStatus.connected ? 'animate-pulse' : ''} />
-                  <div className="text-left">
-                    <div className="text-[10px] font-black uppercase tracking-widest leading-none">Node Status</div>
-                    <div className="text-xs font-black uppercase mt-1">{dbStatus.connected ? 'Live Sync' : 'Offline / Demo'}</div>
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-widest">Node Status</div>
+                    <div className="text-xs font-black uppercase mt-1">{dbStatus.connected ? 'Live Sync' : 'Offline'}</div>
                   </div>
                 </div>
               </div>
-
-              <div className="p-8 bg-slate-950 rounded-[2.5rem] relative overflow-hidden group">
-                   <div className="relative z-10 flex flex-col h-full">
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                           <div className="p-3 bg-gold-500 rounded-2xl text-black">
-                              <Terminal size={24} />
-                           </div>
-                           <h4 className="text-lg font-black text-white uppercase tracking-tight">Database Master DDL v6.0</h4>
-                        </div>
-                        <button 
-                          onClick={handleCopy}
-                          className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
-                        >
-                          {isCopied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                          {isCopied ? 'Copied' : 'Copy Script'}
-                        </button>
-                      </div>
-                      <div className="flex-1 bg-slate-900/50 rounded-2xl p-4 font-mono text-[9px] text-slate-400 overflow-x-auto border border-white/5 scrollbar-hide mb-4">
-                        <pre className="whitespace-pre">{sqlScript}</pre>
-                      </div>
-                      <div className="text-[10px] text-slate-500 font-bold uppercase tracking-tight mt-2 flex items-center gap-2">
-                         <ShieldCheck size={14} className="text-gold-500" /> This script initializes all 8 core production modules.
-                      </div>
-                   </div>
+              <div className="p-8 bg-slate-950 rounded-[2.5rem] text-white space-y-4">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-gold-500 rounded-2xl text-black">
+                      <Terminal size={24} />
+                    </div>
+                    <h4 className="text-lg font-black uppercase tracking-tight">Schema v7.0</h4>
+                  </div>
+                  <button
+                    onClick={handleCopySchema}
+                    className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-[10px] font-black uppercase tracking-widest"
+                  >
+                    {isCopied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                    {isCopied ? 'Copied' : 'Copy Hint'}
+                  </button>
                 </div>
+                <p className="text-sm text-slate-400 leading-relaxed">
+                  Production schema lives in the repo at <span className="text-gold-400">supabase/schema.sql</span>. It creates
+                  branches, profiles, members, attendance, counseling, transactions, sermons, events, products, broadcasts,
+                  RLS policies, and the auth profile trigger.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {dbStatus.tables.map((t) => (
+                    <span key={t} className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-300">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+                <div className="text-[10px] text-slate-500 font-bold uppercase tracking-tight flex items-center gap-2 pt-2">
+                  <ShieldCheck size={14} className="text-gold-500" /> Authenticated staff policies enabled — tighten per-role later if needed.
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -262,68 +210,132 @@ END $$;`;
       case 'branches':
         return (
           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 animate-fadeIn">
-            <div className="flex items-center justify-between mb-8 border-b border-slate-100 pb-6">
-               <div>
-                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Campus Manager</h3>
-                  <p className="text-sm text-slate-500 font-medium">Architecture for multi-site church expansion.</p>
-               </div>
-               <button 
-                 className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-gold-500 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl"
-               >
-                 <Plus size={16} /> Register Campus
-               </button>
+            <div className="flex items-center justify-between mb-8 border-b border-slate-100 pb-6 gap-4 flex-wrap">
+              <div>
+                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Campus Manager</h3>
+                <p className="text-sm text-slate-500 font-medium">Register and manage multi-site campuses.</p>
+              </div>
+              <button
+                onClick={() => setBranchModalOpen(true)}
+                className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-gold-500 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-black"
+              >
+                <Plus size={16} /> Register Campus
+              </button>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {branches.map(branch => (
-                <div key={branch.id} className="p-6 bg-slate-50 rounded-3xl border border-slate-100 hover:border-gold-300 transition-all shadow-sm">
-                   <div className="flex items-start justify-between mb-4">
-                      <div className={`p-3 rounded-2xl ${branch.isHQ ? 'bg-gold-500 text-black' : 'bg-white text-slate-400 border border-slate-200'}`}>
-                         <Church size={24} />
-                      </div>
-                   </div>
-                   <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight">{branch.name}</h4>
-                   <div className="text-xs text-slate-500 font-bold mt-1 uppercase tracking-widest">{branch.location}</div>
+              {branches.map((branch) => (
+                <div key={branch.id} className="p-6 bg-slate-50 rounded-3xl border border-slate-100 hover:border-gold-300 transition-all">
+                  <div className={`p-3 rounded-2xl w-fit mb-4 ${branch.isHQ ? 'bg-gold-500 text-black' : 'bg-white text-slate-400 border border-slate-200'}`}>
+                    <Church size={24} />
+                  </div>
+                  <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight">{branch.name}</h4>
+                  <div className="text-xs text-slate-500 font-bold mt-1 uppercase tracking-widest">{branch.location}</div>
+                  <div className="text-[10px] text-slate-400 font-black uppercase mt-3 tracking-widest">
+                    {branch.code} · {branch.timezone}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         );
-      
-      default: return <div className="p-20 text-center text-slate-400 font-black uppercase tracking-[0.3em]">Terminal Module Locked.</div>;
+
+      case 'payments':
+        return (
+          <div className="bg-white rounded-3xl border border-slate-200 p-8 space-y-4 animate-fadeIn">
+            <h3 className="text-xl font-black uppercase tracking-tight">Payment Gateways</h3>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Manual ledger entry is live. For Paystack / Hubtel webhooks, add a Supabase Edge Function that verifies
+              signatures server-side and inserts into <code>transactions</code>. Never store secret keys in the browser.
+            </p>
+            <div className="grid md:grid-cols-2 gap-4">
+              {['Paystack', 'Hubtel', 'Flutterwave', 'Stripe'].map((p) => (
+                <div key={p} className="p-4 rounded-2xl border border-slate-200 bg-slate-50">
+                  <div className="font-black text-sm uppercase">{p}</div>
+                  <div className="text-[10px] font-bold text-amber-600 uppercase mt-1">Pending Edge Function</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'roles':
+        return (
+          <div className="bg-white rounded-3xl border border-slate-200 p-8 space-y-4 animate-fadeIn">
+            <h3 className="text-xl font-black uppercase tracking-tight">RBAC Security</h3>
+            <p className="text-sm text-slate-500">
+              Your current role: <span className="font-black text-gold-700 uppercase">{userRole}</span>
+            </p>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Roles live in the <code>profiles</code> table (<code>admin</code>, <code>pastor</code>, <code>finance</code>,{' '}
+              <code>kiosk</code>, <code>viewer</code>). Assign roles in Supabase or via SQL after inviting staff users.
+            </p>
+            <ul className="text-sm text-slate-600 space-y-2 list-disc list-inside">
+              <li>admin — full console access</li>
+              <li>pastor — members, counseling, sermons, events</li>
+              <li>finance — treasury ledger</li>
+              <li>kiosk — attendance only</li>
+              <li>viewer — read-only dashboards</li>
+            </ul>
+          </div>
+        );
+
+      case 'automations':
+        return (
+          <div className="bg-white rounded-3xl border border-slate-200 p-8 space-y-4 animate-fadeIn">
+            <h3 className="text-xl font-black uppercase tracking-tight">Logic Streams</h3>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Birthday detection is live in Communication. SMS/email delivery requires a provider (Hubtel, Twilio, Resend)
+              wired through an Edge Function that reads queued <code>broadcasts</code> rows.
+            </p>
+            <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl text-amber-800 text-sm font-medium">
+              Broadcast composer currently queues messages. Connect a provider to mark them Sent.
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
     }
   };
 
   const navItems = [
-    { id: 'db', label: 'Database Node', icon: Database },
     { id: 'deployment', label: 'Vercel Deployment', icon: Rocket },
+    { id: 'db', label: 'Database Node', icon: Database },
     { id: 'branches', label: 'Site Architecture', icon: MapPin },
     { id: 'payments', label: 'Paystack / Hubtel', icon: Wallet },
     { id: 'automations', label: 'Logic Streams', icon: Zap },
     { id: 'roles', label: 'RBAC Security', icon: Shield },
-  ];
+  ] as const;
 
   return (
     <div className="space-y-6 relative pb-10">
       {showSavedToast && (
-        <div className="fixed top-8 right-8 z-[1000] bg-gold-500 text-black px-8 py-4 rounded-[2rem] shadow-2xl flex items-center gap-3 animate-slideIn">
+        <div className="fixed top-8 right-8 z-[1000] bg-gold-500 text-black px-8 py-4 rounded-[2rem] shadow-2xl flex items-center gap-3">
           <CheckCircle2 size={24} />
-          <span className="font-black text-sm uppercase tracking-tight">System Synced to Cloud</span>
+          <span className="font-black text-sm uppercase tracking-tight">Settings Noted</span>
         </div>
       )}
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Administrative Terminal</h2>
-          <p className="text-slate-500 text-sm font-medium">Control center for Charis Christian Center's global infrastructure.</p>
+          <p className="text-slate-500 text-sm font-medium">Production control center for Charis Christian Center.</p>
         </div>
-        <button 
-          onClick={() => { setIsSaving(true); setTimeout(() => { setIsSaving(false); setShowSavedToast(true); setTimeout(() => setShowSavedToast(false), 3000); }, 800); }}
+        <button
+          onClick={() => {
+            setIsSaving(true);
+            verifyConnection().finally(() => {
+              setIsSaving(false);
+              setShowSavedToast(true);
+              setTimeout(() => setShowSavedToast(false), 2500);
+              showToast('Connection rechecked.', 'success');
+            });
+          }}
           disabled={isSaving}
-          className="flex items-center gap-2 px-8 py-3 bg-slate-900 text-gold-500 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-black shadow-xl shadow-gold-900/10 transition-all disabled:opacity-70"
+          className="flex items-center gap-2 px-8 py-3 bg-slate-900 text-gold-500 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-black disabled:opacity-70"
         >
           {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-          {isSaving ? 'Syncing Node...' : 'Commit Settings'}
+          {isSaving ? 'Checking…' : 'Recheck Cloud'}
         </button>
       </div>
 
@@ -332,10 +344,10 @@ END $$;`;
           {navItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveSection(item.id as SettingsSection)}
+              onClick={() => setActiveSection(item.id)}
               className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                activeSection === item.id 
-                  ? 'bg-gold-500 text-black shadow-xl shadow-gold-500/20 scale-[1.02]' 
+                activeSection === item.id
+                  ? 'bg-gold-500 text-black shadow-xl shadow-gold-500/20'
                   : 'text-slate-400 hover:bg-slate-50 hover:text-gold-600'
               }`}
             >
@@ -345,18 +357,77 @@ END $$;`;
             </button>
           ))}
         </nav>
-
-        <div className="lg:col-span-3">
-          {renderSection()}
-        </div>
+        <div className="lg:col-span-3">{renderSection()}</div>
       </div>
 
-      <style>{`
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        .animate-slideIn { animation: slideIn 0.3s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
-      `}</style>
+      {branchModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h3 className="text-lg font-bold text-slate-900">Register Campus</h3>
+              <button onClick={() => setBranchModalOpen(false)} className="p-1 text-slate-400" aria-label="Close">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleRegisterCampus} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Campus Name</label>
+                <input
+                  required
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold"
+                  value={branchForm.name}
+                  onChange={(e) => setBranchForm({ ...branchForm, name: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Location</label>
+                <input
+                  required
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold"
+                  value={branchForm.location}
+                  onChange={(e) => setBranchForm({ ...branchForm, location: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Code</label>
+                  <input
+                    required
+                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold"
+                    value={branchForm.code}
+                    onChange={(e) => setBranchForm({ ...branchForm, code: e.target.value })}
+                    placeholder="ACC-02"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Timezone</label>
+                  <input
+                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold"
+                    value={branchForm.timezone}
+                    onChange={(e) => setBranchForm({ ...branchForm, timezone: e.target.value })}
+                  />
+                </div>
+              </div>
+              <label className="flex items-center gap-2 text-sm font-bold text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={branchForm.isHQ}
+                  onChange={(e) => setBranchForm({ ...branchForm, isHQ: e.target.checked })}
+                />
+                Mark as HQ
+              </label>
+              <button
+                type="submit"
+                disabled={branchSaving}
+                className="w-full py-3 bg-gold-500 text-black rounded-xl text-sm font-bold hover:bg-gold-600 disabled:opacity-70 flex items-center justify-center gap-2"
+              >
+                {branchSaving ? <Loader2 className="animate-spin" size={16} /> : null}
+                Save Campus
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

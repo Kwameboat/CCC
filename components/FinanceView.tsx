@@ -6,6 +6,7 @@ import {
   ExternalLink, CheckCircle2, X, Smartphone, Landmark, Loader2
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { showToast } from '../lib/toast';
 
 interface TransactionRecord {
   id: string;
@@ -14,9 +15,10 @@ interface TransactionRecord {
   method: string;
   status: string;
   date: string;
-  icon: React.ReactNode;
-  color: string;
+  isIncome: boolean;
 }
+
+const INCOME_TYPES = new Set(['Tithe', 'Offering', 'Donation', 'Special Fund', 'Store']);
 
 const FinanceView: React.FC<{ branchId: string }> = ({ branchId }) => {
   const [balance, setBalance] = useState(0);
@@ -25,7 +27,6 @@ const FinanceView: React.FC<{ branchId: string }> = ({ branchId }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [modalType, setModalType] = useState<'income' | 'expense'>('income');
   const [transactions, setTransactions] = useState<TransactionRecord[]>([]);
-
   const [formData, setFormData] = useState({ amount: '', category: 'Tithe', method: 'Mobile Money' });
 
   useEffect(() => {
@@ -39,53 +40,88 @@ const FinanceView: React.FC<{ branchId: string }> = ({ branchId }) => {
       .select('*')
       .eq('branch_id', branchId)
       .order('created_at', { ascending: false });
-    
-    if (!error && data) {
-      const mapped = data.map(tx => {
-        const isIncome = tx.amount > 0;
+
+    if (error) {
+      showToast(error.message, 'error');
+      setTransactions([]);
+      setBalance(0);
+      setIsLoading(false);
+      return;
+    }
+
+    if (data) {
+      const mapped = data.map((tx) => {
+        const isIncome = INCOME_TYPES.has(tx.type) || Number(tx.amount) > 0;
         return {
           id: tx.id,
           type: tx.type,
-          amount: Math.abs(tx.amount),
+          amount: Math.abs(Number(tx.amount)),
           method: tx.method,
           status: tx.status,
           date: new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          icon: isIncome ? <ArrowUp size={14}/> : <ArrowDown size={14}/>,
-          color: isIncome ? 'emerald' : 'rose'
+          isIncome,
         };
       });
       setTransactions(mapped);
-      
-      const total = data.reduce((acc, curr) => acc + Number(curr.amount), 0);
+      const total = data.reduce((acc, curr) => {
+        const amt = Math.abs(Number(curr.amount));
+        return INCOME_TYPES.has(curr.type) || Number(curr.amount) > 0 ? acc + amt : acc - amt;
+      }, 0);
       setBalance(total);
     }
     setIsLoading(false);
   };
 
+  const handleExportCsv = () => {
+    const header = ['Type', 'Amount', 'Method', 'Status', 'Date'];
+    const rows = transactions.map((t) =>
+      [t.type, t.isIncome ? t.amount : -t.amount, t.method, t.status, t.date]
+        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+        .join(',')
+    );
+    const blob = new Blob([[header.join(','), ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ccc-finance-${branchId}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`Exported ${transactions.length} transactions.`, 'success');
+  };
+
   const handleTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     const amt = parseFloat(formData.amount);
-    if (isNaN(amt)) return;
+    if (isNaN(amt) || amt <= 0) {
+      showToast('Enter a valid amount greater than zero.', 'error');
+      return;
+    }
 
     setIsProcessing(true);
     const finalAmount = modalType === 'income' ? amt : -amt;
+    const category =
+      modalType === 'expense' && INCOME_TYPES.has(formData.category) ? 'Utility' : formData.category;
 
-    const { error } = await supabase.from('transactions').insert([{
-      branch_id: branchId,
-      amount: finalAmount,
-      type: formData.category,
-      method: formData.method,
-      status: 'Completed'
-    }]);
+    const { error } = await supabase.from('transactions').insert([
+      {
+        branch_id: branchId,
+        amount: finalAmount,
+        type: category,
+        method: formData.method,
+        status: 'Completed',
+      },
+    ]);
 
-    if (!error) {
-      setIsModalOpen(false);
-      fetchTransactions();
-      setFormData({ amount: '', category: 'Tithe', method: 'Mobile Money' });
-    }
     setIsProcessing(false);
+    if (error) {
+      showToast(error.message, 'error');
+      return;
+    }
+    showToast('Transaction recorded.', 'success');
+    setIsModalOpen(false);
+    fetchTransactions();
+    setFormData({ amount: '', category: modalType === 'income' ? 'Tithe' : 'Utility', method: 'Mobile Money' });
   };
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -94,14 +130,20 @@ const FinanceView: React.FC<{ branchId: string }> = ({ branchId }) => {
           <p className="text-slate-500">Real-time ledger for church tithes, offerings, and local MM collections.</p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={handleExportCsv}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50"
+          >
+            <Download size={18} /> Export
+          </button>
           <button 
-            onClick={() => { setModalType('income'); setIsModalOpen(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-md transition-all active:scale-95"
+            onClick={() => { setModalType('income'); setFormData({ amount: '', category: 'Tithe', method: 'Mobile Money' }); setIsModalOpen(true); }}
+            className="flex items-center gap-2 px-4 py-2 bg-gold-500 text-black rounded-xl text-sm font-bold hover:bg-gold-600 shadow-md transition-all active:scale-95"
           >
             <DollarSign size={18} /> New Entry
           </button>
           <button 
-            onClick={() => { setModalType('expense'); setIsModalOpen(true); }}
+            onClick={() => { setModalType('expense'); setFormData({ amount: '', category: 'Utility', method: 'Cash' }); setIsModalOpen(true); }}
             className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-xl text-sm font-bold hover:bg-rose-700 shadow-md transition-all active:scale-95"
           >
             <ArrowDown size={18} /> Log Disbursement
@@ -128,7 +170,7 @@ const FinanceView: React.FC<{ branchId: string }> = ({ branchId }) => {
           </div>
           <div className="mt-6">
             <div className="text-2xl font-black text-slate-900">
-               GH₵ {transactions.filter(t => t.method === 'Mobile Money' && t.color === 'emerald').reduce((a, b) => a + b.amount, 0).toLocaleString()}
+               GH₵ {transactions.filter(t => t.method === 'Mobile Money' && t.isIncome).reduce((a, b) => a + b.amount, 0).toLocaleString()}
             </div>
             <p className="text-slate-400 text-xs font-medium">via Paystack & Hubtel Hub</p>
           </div>
@@ -141,7 +183,7 @@ const FinanceView: React.FC<{ branchId: string }> = ({ branchId }) => {
           </div>
           <div className="mt-6">
             <div className="text-2xl font-black text-slate-900">
-               GH₵ {transactions.filter(t => t.method === 'Bank' && t.color === 'emerald').reduce((a, b) => a + b.amount, 0).toLocaleString()}
+               GH₵ {transactions.filter(t => (t.method === 'Bank' || t.method === 'Bank Transfer') && t.isIncome).reduce((a, b) => a + b.amount, 0).toLocaleString()}
             </div>
             <p className="text-slate-400 text-xs font-medium">Settled to main account</p>
           </div>
@@ -151,7 +193,7 @@ const FinanceView: React.FC<{ branchId: string }> = ({ branchId }) => {
       <div className="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm min-h-[400px]">
         <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
           <h3 className="font-black text-slate-900 uppercase tracking-tight">Audit Trail</h3>
-          <button className="p-2 hover:bg-slate-100 rounded-xl text-slate-400"><Download size={20}/></button>
+          <button onClick={handleExportCsv} className="p-2 hover:bg-slate-100 rounded-xl text-slate-400" aria-label="Export CSV"><Download size={20}/></button>
         </div>
         {isLoading ? (
           <div className="flex flex-col items-center justify-center p-20 gap-4 opacity-30">
@@ -171,31 +213,37 @@ const FinanceView: React.FC<{ branchId: string }> = ({ branchId }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {transactions.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-slate-50 transition-colors animate-fadeIn">
+                {transactions.length > 0 ? transactions.map((tx) => (
+                  <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2 text-sm font-bold text-slate-900 uppercase">
-                         <span className={`p-1.5 rounded-lg bg-${tx.color}-50 text-${tx.color}-600`}>{tx.icon}</span>
+                         <span className={`p-1.5 rounded-lg ${tx.isIncome ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                           {tx.isIncome ? <ArrowUp size={14}/> : <ArrowDown size={14}/>}
+                         </span>
                          {tx.type}
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className={`text-sm font-black ${tx.color === 'rose' ? 'text-rose-600' : 'text-emerald-600'}`}>
-                        {tx.color === 'rose' ? '-' : '+'}GH₵ {tx.amount.toLocaleString()}
+                      <div className={`text-sm font-black ${tx.isIncome ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {tx.isIncome ? '+' : '-'}GH₵ {tx.amount.toLocaleString()}
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                         {tx.method === 'Mobile Money' && <Smartphone size={14} className="text-indigo-500" />}
+                         {tx.method === 'Mobile Money' && <Smartphone size={14} className="text-gold-600" />}
                          <span className="text-[10px] font-black text-slate-500 uppercase">{tx.method}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-[9px] font-black px-2.5 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg uppercase tracking-widest">Confirmed</span>
+                      <span className="text-[9px] font-black px-2.5 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg uppercase tracking-widest">{tx.status || 'Confirmed'}</span>
                     </td>
                     <td className="px-6 py-4 text-xs text-slate-500 font-bold uppercase">{tx.date}</td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center text-slate-400 text-sm">No transactions for this branch yet.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

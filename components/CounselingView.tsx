@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { CounselingRecord } from '../types';
 import { supabase } from '../lib/supabase';
+import { showToast } from '../lib/toast';
 
 interface CounselingViewProps {
   activeBranchId: string;
@@ -49,14 +50,17 @@ const CounselingView: React.FC<CounselingViewProps> = ({ activeBranchId }) => {
       .eq('branch_id', activeBranchId)
       .order('created_at', { ascending: false });
     
-    if (!error && data) {
+    if (error) {
+      showToast(error.message, 'error');
+      setRecords([]);
+    } else if (data) {
       setRecords(data.map(r => ({
         id: r.id,
         branchId: r.branch_id,
         personName: r.person_name,
         problem: r.problem,
         solution: r.solution || '',
-        followUpStatus: r.follow_up_status as any,
+        followUpStatus: r.follow_up_status as CounselingRecord['followUpStatus'],
         date: new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         counselor: r.counselor || 'Staff'
       })));
@@ -84,15 +88,23 @@ const CounselingView: React.FC<CounselingViewProps> = ({ activeBranchId }) => {
   };
 
   const handleDeleteRecord = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this confidential record?')) {
-      const { error } = await supabase.from('counseling').delete().eq('id', id);
-      if (!error) fetchRecords();
+    if (!window.confirm('Are you sure you want to delete this confidential record?')) return;
+    const { error } = await supabase.from('counseling').delete().eq('id', id);
+    if (error) {
+      showToast(error.message, 'error');
+      return;
     }
+    showToast('Record deleted.', 'success');
+    fetchRecords();
   };
 
   const handleSaveRecord = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     const payload = {
       branch_id: activeBranchId,
@@ -100,16 +112,19 @@ const CounselingView: React.FC<CounselingViewProps> = ({ activeBranchId }) => {
       problem: formState.problem,
       solution: formState.solution,
       follow_up_status: formState.followUpStatus,
-      counselor: 'Ps. Silas Okeke' // System context
+      counselor: user?.email || 'Staff',
     };
 
-    if (isEditing && editingId) {
-      await supabase.from('counseling').update(payload).eq('id', editingId);
-    } else {
-      await supabase.from('counseling').insert([payload]);
-    }
+    const { error } = isEditing && editingId
+      ? await supabase.from('counseling').update(payload).eq('id', editingId)
+      : await supabase.from('counseling').insert([payload]);
 
     setIsProcessing(false);
+    if (error) {
+      showToast(error.message, 'error');
+      return;
+    }
+    showToast(isEditing ? 'Record updated.' : 'Record saved.', 'success');
     setIsModalOpen(false);
     fetchRecords();
   };
