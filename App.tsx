@@ -49,7 +49,9 @@ const App: React.FC = () => {
   const [session, setSession] = useState<AppSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<View>('dashboard');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 1024px)').matches : true
+  );
   const [branches, setBranches] = useState<Branch[]>(DEFAULT_BRANCHES);
   const [activeBranchId, setActiveBranchId] = useState<string>('');
   const [members, setMembers] = useState<Member[]>([]);
@@ -92,6 +94,18 @@ const App: React.FC = () => {
     fetchInitialData();
     loadProfile(session.user.id, session.user.email);
   }, [session]);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const onChange = (e: MediaQueryListEvent) => setIsSidebarOpen(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  const handleViewChange = (view: View) => {
+    setCurrentView(view);
+    if (window.innerWidth < 1024) setIsSidebarOpen(false);
+  };
 
   const loadProfile = async (userId: string, email?: string | null) => {
     setAccessReady(false);
@@ -288,17 +302,26 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden animate-fadeIn">
+    <div className="flex h-[100dvh] bg-slate-50 overflow-hidden animate-fadeIn">
+      {isSidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close menu overlay"
+          className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       <Sidebar
         currentView={currentView}
-        onViewChange={setCurrentView}
+        onViewChange={handleViewChange}
         isOpen={isSidebarOpen}
         toggle={() => setIsSidebarOpen(!isSidebarOpen)}
         userRole={userRole}
         permissions={userPermissions}
       />
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden w-full">
         <Header
           currentView={currentView}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -313,20 +336,20 @@ const App: React.FC = () => {
             setSession(null);
           }}
         />
-        <main className="flex-1 overflow-y-auto bg-slate-50 p-4 md:p-8">
-          <div className="max-w-7xl mx-auto animate-fadeIn">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 p-3 sm:p-4 md:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto w-full animate-fadeIn">
             {dataError && (
-              <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl text-xs font-bold">
+              <div className="mb-4 px-3 sm:px-4 py-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl text-xs font-bold break-words">
                 {dataError}
               </div>
             )}
-            <div className="mb-6 flex items-center gap-3">
-              <span className="px-3 py-1 bg-gold-500 text-black text-[10px] font-black uppercase rounded-lg border border-gold-600 shadow-sm flex items-center gap-2">
+            <div className="mb-4 sm:mb-6 flex flex-wrap items-center gap-2 sm:gap-3">
+              <span className="px-2.5 sm:px-3 py-1 bg-gold-500 text-black text-[9px] sm:text-[10px] font-black uppercase rounded-lg border border-gold-600 shadow-sm flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping"></div>
                 {activeBranch?.isHQ ? 'Master HQ Node' : 'Satellite Node'}
               </span>
-              <span className="text-slate-300 font-black text-xs uppercase tracking-widest">•</span>
-              <span className="text-slate-400 font-bold text-xs uppercase tracking-widest">
+              <span className="text-slate-300 font-black text-xs uppercase tracking-widest hidden sm:inline">•</span>
+              <span className="text-slate-400 font-bold text-[10px] sm:text-xs uppercase tracking-widest truncate max-w-full">
                 {activeBranch?.location || 'Detecting Location...'}
               </span>
             </div>

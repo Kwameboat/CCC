@@ -90,8 +90,8 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
       </div>
 
       <div className="w-full max-w-md relative z-10">
-        <div className="bg-white rounded-[3.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.8)] overflow-hidden border border-white/20 animate-slideUp">
-          <div className="bg-slate-950 p-10 pt-14 text-center relative overflow-hidden">
+        <div className="bg-white rounded-[3.5rem] sm:rounded-[3.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.8)] overflow-hidden border border-white/20 animate-slideUp">
+          <div className="bg-slate-950 p-8 sm:p-10 pt-10 sm:pt-14 text-center relative overflow-hidden">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,#c59235,transparent)] opacity-40"></div>
             <Logo size={120} className="relative z-10 mb-2" />
             <h1 className="text-2xl font-black text-white uppercase tracking-tighter relative z-10 mt-4">Console Access</h1>

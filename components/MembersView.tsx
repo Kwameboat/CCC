@@ -213,7 +213,7 @@ const MembersView: React.FC<MembersViewProps> = ({ members, onRefresh, activeBra
           <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Congregation Directory</h2>
           <p className="text-slate-500 text-sm font-medium">Member records for the active branch.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 page-actions">
           <button
             onClick={onRefresh}
             className="p-2 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-gold-600"
@@ -223,13 +223,13 @@ const MembersView: React.FC<MembersViewProps> = ({ members, onRefresh, activeBra
           </button>
           <button
             onClick={handleExportCsv}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-50"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest hover:bg-slate-50"
           >
-            <Download size={18} /> Export CSV
+            <Download size={18} /> <span className="hidden xs:inline sm:inline">Export CSV</span><span className="sm:hidden">CSV</span>
           </button>
           <button
             onClick={handleOpenAdd}
-            className="flex items-center gap-2 px-6 py-2 bg-gold-500 text-black rounded-xl text-xs font-black uppercase tracking-widest hover:bg-gold-600 shadow-xl shadow-gold-100"
+            className="flex items-center gap-2 px-4 sm:px-6 py-2 bg-gold-500 text-black rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest hover:bg-gold-600 shadow-xl shadow-gold-100"
           >
             <UserPlus size={18} /> New Soul
           </button>
@@ -265,39 +265,40 @@ const MembersView: React.FC<MembersViewProps> = ({ members, onRefresh, activeBra
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto table-scroll">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                <th className="px-6 py-4">Identity</th>
-                <th className="px-6 py-4">Classification</th>
-                <th className="px-6 py-4">Birthday</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+                <th className="px-4 sm:px-6 py-4">Identity</th>
+                <th className="px-4 sm:px-6 py-4 hidden sm:table-cell">Classification</th>
+                <th className="px-4 sm:px-6 py-4 hidden md:table-cell">Birthday</th>
+                <th className="px-4 sm:px-6 py-4">Status</th>
+                <th className="px-4 sm:px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredMembers.length > 0 ? (
                 filteredMembers.map((member) => (
                   <tr key={member.id} className="hover:bg-slate-50 group transition-colors">
-                    <td className="px-6 py-4">
+                    <td className="px-4 sm:px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-slate-200 flex-shrink-0 overflow-hidden ring-2 ring-white shadow-sm">
                           <img src={getPhotoSrc(member.photo)} alt={member.name} className="w-full h-full object-cover" />
                         </div>
-                        <div>
-                          <div className="text-sm font-black text-slate-900 uppercase tracking-tight">{member.name}</div>
-                          <div className="text-[10px] text-slate-400 font-bold uppercase">
+                        <div className="min-w-0">
+                          <div className="text-sm font-black text-slate-900 uppercase tracking-tight truncate">{member.name}</div>
+                          <div className="text-[10px] text-slate-400 font-bold uppercase truncate">
                             {member.phone || member.email || '—'}
                           </div>
+                          <div className="sm:hidden text-[9px] font-black text-gold-600 uppercase mt-0.5">{member.category}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 sm:px-6 py-4 hidden sm:table-cell">
                       <div className="text-[10px] font-black text-gold-600 uppercase tracking-widest">{member.category}</div>
                       <div className="text-[10px] text-slate-400 font-medium">{member.dept || '—'}</div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 sm:px-6 py-4 hidden md:table-cell">
                       <div className="flex items-center gap-1.5 text-xs text-slate-600 font-black uppercase">
                         <CalendarDays size={14} className="text-slate-400" />
                         {member.dob
@@ -305,7 +306,7 @@ const MembersView: React.FC<MembersViewProps> = ({ members, onRefresh, activeBra
                           : '---'}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 sm:px-6 py-4">
                       <span
                         className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
                           member.status === 'Active'
@@ -316,8 +317,8 @@ const MembersView: React.FC<MembersViewProps> = ({ members, onRefresh, activeBra
                         {member.status || 'Active'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end items-center gap-2">
+                    <td className="px-4 sm:px-6 py-4 text-right">
+                      <div className="flex justify-end items-center gap-1 sm:gap-2">
                         <button onClick={() => handleOpenEdit(member)} className="p-2 hover:bg-gold-50 text-slate-400 hover:text-gold-600 rounded-xl" aria-label="Edit member">
                           <Edit2 size={16} />
                         </button>
@@ -401,7 +402,7 @@ const MembersView: React.FC<MembersViewProps> = ({ members, onRefresh, activeBra
 
       {isModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm">
-          <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-lg overflow-hidden max-h-[90dvh] overflow-y-auto modal-sheet">
             <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 sticky top-0">
               <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">
                 {isEditing ? 'Edit Identity' : 'Register New Soul'}
@@ -430,7 +431,7 @@ const MembersView: React.FC<MembersViewProps> = ({ members, onRefresh, activeBra
                   <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} accept="image/*" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Full Legal Name</label>
                   <input

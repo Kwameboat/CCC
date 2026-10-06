@@ -324,7 +324,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
   return (
     <div className="space-y-6 relative pb-10">
       {showSavedToast && (
-        <div className="fixed top-8 right-8 z-[1000] bg-gold-500 text-black px-8 py-4 rounded-[2rem] shadow-2xl flex items-center gap-3">
+        <div className="fixed top-4 right-4 left-4 sm:left-auto sm:top-8 sm:right-8 z-[1000] bg-gold-500 text-black px-6 sm:px-8 py-4 rounded-[2rem] shadow-2xl flex items-center gap-3">
           <CheckCircle2 size={24} />
           <span className="font-black text-sm uppercase tracking-tight">Settings Noted</span>
         </div>
@@ -402,7 +402,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                   onChange={(e) => setBranchForm({ ...branchForm, location: e.target.value })}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Code</label>
                   <input

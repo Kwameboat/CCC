@@ -193,7 +193,7 @@ const CommunicationView: React.FC<CommunicationViewProps> = ({ members }) => {
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
               <h3 className="font-bold text-slate-800 mb-6">Quick Message Composer</h3>
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Target Group</label>
                     <select

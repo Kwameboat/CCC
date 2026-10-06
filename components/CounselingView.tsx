@@ -263,21 +263,21 @@ const CounselingView: React.FC<CounselingViewProps> = ({ activeBranchId }) => {
       {/* Counseling Session Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-fadeIn">
-          <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-slideUp">
-            <div className="p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <div className="flex items-center gap-4">
-                <div className="p-4 bg-rose-600 text-white rounded-2xl shadow-xl shadow-rose-200 animate-pulse"><HeartHandshake size={28} /></div>
-                <div>
-                  <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
+          <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-slideUp max-h-[90dvh] overflow-y-auto modal-sheet">
+            <div className="p-6 sm:p-10 border-b border-slate-100 flex justify-between items-start sm:items-center gap-3 bg-slate-50/50">
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                <div className="p-3 sm:p-4 bg-rose-600 text-white rounded-2xl shadow-xl shadow-rose-200 shrink-0"><HeartHandshake size={24} /></div>
+                <div className="min-w-0">
+                  <h3 className="text-lg sm:text-2xl font-black text-slate-900 uppercase tracking-tight">
                     {isEditing ? 'Modify Case File' : 'Log New Session'}
                   </h3>
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Confidential Welfare Log</p>
+                  <p className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Confidential Welfare Log</p>
                 </div>
               </div>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-3 bg-white rounded-full shadow-lg border border-slate-100 transition-all hover:rotate-90"><X size={24} /></button>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-3 bg-white rounded-full shadow-lg border border-slate-100 transition-all hover:rotate-90 shrink-0"><X size={24} /></button>
             </div>
-            <form onSubmit={handleSaveRecord} className="p-10 space-y-8">
-              <div className="grid grid-cols-2 gap-8">
+            <form onSubmit={handleSaveRecord} className="p-6 sm:p-10 space-y-6 sm:space-y-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
                 <div className="col-span-1">
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Congregant Full Name</label>
                   <input 

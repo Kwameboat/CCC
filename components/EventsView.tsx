@@ -131,7 +131,7 @@ const EventsView: React.FC<EventsViewProps> = ({ branchId }) => {
             />
           </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto table-scroll">
           {loading ? (
             <div className="py-16 flex justify-center">
               <Loader2 className="animate-spin text-slate-400" size={28} />
@@ -219,7 +219,7 @@ const EventsView: React.FC<EventsViewProps> = ({ branchId }) => {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Date</label>
                   <input
