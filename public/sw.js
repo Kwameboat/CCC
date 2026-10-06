@@ -1,5 +1,5 @@
-/* CCC Console service worker — app shell cache for offline reopen */
-const CACHE_VERSION = 'ccc-pwa-v1';
+/* CCC Console service worker — auto-update + app shell cache */
+const CACHE_VERSION = 'ccc-pwa-v2';
 const SHELL = [
   '/',
   '/index.html',
@@ -7,19 +7,35 @@ const SHELL = [
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/apple-touch-icon.png',
+  '/version.json',
 ];
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_VERSION).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting())
+    caches
+      .open(CACHE_VERSION)
+      .then((cache) => cache.addAll(SHELL).catch(() => undefined))
+      .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
+      .then(() =>
+        self.clients.matchAll({ type: 'window' }).then((clients) => {
+          clients.forEach((client) => client.postMessage({ type: 'SW_UPDATED', version: CACHE_VERSION }));
+        })
+      )
   );
 });
 
@@ -33,7 +49,13 @@ self.addEventListener('fetch', (event) => {
   // Never cache API / auth traffic
   if (url.pathname.includes('supabase') || url.hostname.includes('supabase')) return;
 
-  // Navigations: network-first, fall back to cached shell
+  // Always network-first for version stamp and the service worker itself
+  if (url.pathname === '/version.json' || url.pathname === '/sw.js') {
+    event.respondWith(fetch(request).catch(() => caches.match(request)));
+    return;
+  }
+
+  // Navigations: network-first so phone apps pick up new deploys
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
@@ -47,7 +69,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets: stale-while-revalidate
+  // Hashed Vite assets: cache-first, revalidate in background
   event.respondWith(
     caches.match(request).then((cached) => {
       const network = fetch(request)
