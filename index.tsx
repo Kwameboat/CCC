@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import PwaUpdateToast from './components/PwaUpdateToast';
 import { registerServiceWorker } from './lib/pwa';
 
 const rootElement = document.getElementById('root');
@@ -16,6 +17,7 @@ root.render(
   <React.StrictMode>
     <ErrorBoundary>
       <App />
+      <PwaUpdateToast />
     </ErrorBoundary>
   </React.StrictMode>
 );
