@@ -1,0 +1,47 @@
+{
+  "name": "Charis Christian Center Console",
+  "short_name": "CCC Console",
+  "description": "Church management console for Charis Christian Center — members, attendance, finance, and more.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#050505",
+  "theme_color": "#050505",
+  "lang": "en",
+  "categories": ["business", "productivity", "religion"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Attendance",
+      "short_name": "Attendance",
+      "url": "/?view=attendance",
+      "description": "Open service attendance"
+    },
+    {
+      "name": "Finance",
+      "short_name": "Finance",
+      "url": "/?view=finance",
+      "description": "Open treasury"
+    }
+  ]
+}

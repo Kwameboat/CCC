@@ -3,6 +3,7 @@ import { Mail, Lock, ShieldCheck, ArrowRight, Loader2, AlertCircle, Eye, EyeOff,
 import { supabase, isDemoLoginEnabled } from '../lib/supabase';
 import { showToast } from '../lib/toast';
 import Logo from './Logo';
+import InstallAppButton from './InstallAppButton';
 import type { Session } from '@supabase/supabase-js';
 
 interface LoginViewProps {
@@ -205,6 +206,10 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                 )}
               </div>
             </form>
+
+            <div className="mt-6">
+              <InstallAppButton variant="login" />
+            </div>
 
             <div className="mt-10 pt-6 border-t border-slate-50 flex items-center justify-center gap-2">
               <ShieldCheck size={16} className="text-gold-500" />
