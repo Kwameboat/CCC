@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Bell, Search, Languages, User, Menu, ChevronDown, MapPin, Globe, Check, LogOut } from 'lucide-react';
 import { View, Branch } from '../types';
+import InstallAppButton from './InstallAppButton';
 
 interface HeaderProps {
   currentView: View;
@@ -54,6 +55,8 @@ const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 h-full shrink-0">
+        <InstallAppButton variant="header" />
+
         <div className="relative h-full flex items-center">
           <button
             onClick={() => {

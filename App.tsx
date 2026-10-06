@@ -14,6 +14,7 @@ import CommunicationView from './components/CommunicationView';
 import SettingsView from './components/SettingsView';
 import CounselingView from './components/CounselingView';
 import LoginView from './components/LoginView';
+import InstallAppButton from './components/InstallAppButton';
 import { supabase, hasSupabaseConfig } from './lib/supabase';
 import { showToast } from './lib/toast';
 import { View, Member, Branch } from './types';
@@ -352,6 +353,9 @@ const App: React.FC = () => {
               <span className="text-slate-400 font-bold text-[10px] sm:text-xs uppercase tracking-widest truncate max-w-full">
                 {activeBranch?.location || 'Detecting Location...'}
               </span>
+            </div>
+            <div className="mb-4 sm:mb-6">
+              <InstallAppButton variant="banner" />
             </div>
             {renderContent()}
           </div>
