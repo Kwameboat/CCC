@@ -125,7 +125,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ members, branch, allMembe
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <StatWidget title="Branch Congregation" value={members.length.toLocaleString()} subtitle="Live roster" icon={Users} />
         <StatWidget
           title="Treasury Balance"
@@ -142,7 +142,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ members, branch, allMembe
         <StatWidget title="Today's Check-ins" value={isLoadingStats ? '---' : todayAttendance.toLocaleString()} subtitle="Attendance kiosk" icon={Heart} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-8">
             <div>

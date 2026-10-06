@@ -150,7 +150,7 @@ const SermonsView: React.FC<SermonsViewProps> = ({ branchId }) => {
             />
           </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto table-scroll">
           {loading ? (
             <div className="py-16 flex justify-center">
               <Loader2 className="animate-spin text-slate-400" size={28} />
@@ -261,7 +261,7 @@ const SermonsView: React.FC<SermonsViewProps> = ({ branchId }) => {
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Media Format</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {['Video', 'Audio', 'Text'].map((type) => (
                     <button
                       key={type}

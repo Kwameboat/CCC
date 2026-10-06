@@ -272,7 +272,7 @@ const StaffManager: React.FC<StaffManagerProps> = ({ currentUserId, currentUserR
           No staff profiles yet. Add your first team member.
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto table-scroll">
           <table className="w-full text-left">
             <thead>
               <tr className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100">
@@ -389,7 +389,7 @@ const StaffManager: React.FC<StaffManagerProps> = ({ currentUserId, currentUserR
               )}
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Role Preset</label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {(Object.keys(ROLE_LABELS) as StaffRole[]).map((role) => (
                     <button
                       key={role}

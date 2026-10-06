@@ -390,30 +390,30 @@ const FinanceView: React.FC<FinanceViewProps> = ({ branchId, members }) => {
             Record tithes and pledges under each member’s name and track promise fulfillment.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 page-actions">
           <button onClick={refreshAll} className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-gold-600" aria-label="Refresh">
             <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
           </button>
-          <button onClick={handleExportCsv} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50">
+          <button onClick={handleExportCsv} className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50">
             <Download size={18} /> Export
           </button>
           <button
             onClick={() => openModal('income')}
-            className="flex items-center gap-2 px-4 py-2 bg-gold-500 text-black rounded-xl text-sm font-bold hover:bg-gold-600 shadow-md"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gold-500 text-black rounded-xl text-xs font-bold hover:bg-gold-600 shadow-md"
           >
-            <DollarSign size={18} /> Record Tithe / Income
+            <DollarSign size={18} /> <span className="sm:hidden">Tithe</span><span className="hidden sm:inline">Record Tithe / Income</span>
           </button>
           <button
             onClick={() => openModal('pledge_promise')}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-gold-400 rounded-xl text-sm font-bold"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-slate-900 text-gold-400 rounded-xl text-xs font-bold"
           >
             <HandCoins size={18} /> New Pledge
           </button>
           <button
             onClick={() => openModal('expense')}
-            className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-xl text-sm font-bold hover:bg-rose-700"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700"
           >
-            <ArrowDown size={18} /> Log Disbursement
+            <ArrowDown size={18} /> <span className="sm:hidden">Expense</span><span className="hidden sm:inline">Log Disbursement</span>
           </button>
         </div>
       </div>
@@ -481,7 +481,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ branchId, members }) => {
               <span className="font-black uppercase text-[10px] tracking-widest">Loading ledger…</span>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto table-scroll">
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-100">
@@ -550,7 +550,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ branchId, members }) => {
               <Plus size={14} /> Record Tithe
             </button>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto table-scroll">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -609,7 +609,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ branchId, members }) => {
               </button>
             </div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto table-scroll">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -779,7 +779,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ branchId, members }) => {
               </div>
 
               {modalMode === 'income' || modalMode === 'expense' ? (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Category</label>
                     <select

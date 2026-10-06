@@ -430,24 +430,24 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ members, onRefresh, act
   if (isKioskMode) {
     return (
       <div className="fixed inset-0 z-[999] bg-slate-950 flex flex-col text-white animate-fadeIn overflow-hidden">
-        <div className="h-24 bg-slate-900 border-b border-white/5 flex items-center justify-between px-8 shrink-0">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-gold-500 text-black rounded-2xl"><Smartphone size={28} /></div>
-            <div>
-              <h1 className="text-xl font-black uppercase text-gold-500">Kiosk · {activeService?.name || 'No Service'}</h1>
-              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5 mt-1">
-                <ShieldCheck size={14} className="text-gold-500" /> {activeService?.serviceDate || 'Select a service'}
+        <div className="h-16 sm:h-24 bg-slate-900 border-b border-white/5 flex items-center justify-between px-4 sm:px-8 shrink-0 gap-3">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <div className="p-2 sm:p-3 bg-gold-500 text-black rounded-2xl shrink-0"><Smartphone size={22} className="sm:w-7 sm:h-7" /></div>
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-xl font-black uppercase text-gold-500 truncate">Kiosk · {activeService?.name || 'No Service'}</h1>
+              <p className="text-[9px] sm:text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5 mt-1 truncate">
+                <ShieldCheck size={14} className="text-gold-500 shrink-0" /> {activeService?.serviceDate || 'Select a service'}
               </p>
             </div>
           </div>
-          <button onClick={() => setIsKioskMode(false)} className="px-6 py-3 bg-white/5 hover:bg-rose-600 rounded-2xl text-xs font-black uppercase tracking-widest">Exit</button>
+          <button onClick={() => setIsKioskMode(false)} className="px-3 sm:px-6 py-2 sm:py-3 bg-white/5 hover:bg-rose-600 rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest shrink-0">Exit</button>
         </div>
 
         {showSuccess && (
-          <div className="absolute inset-0 z-[1100] bg-gold-500 flex flex-col items-center justify-center p-8 text-center">
-            <CheckCircle2 size={96} className="mb-6 text-slate-950" strokeWidth={3} />
-            <h2 className="text-5xl font-black uppercase text-slate-950 mb-3">Welcome!</h2>
-            <p className="text-3xl font-black uppercase text-slate-800">{lastCheckedInMember}</p>
+          <div className="absolute inset-0 z-[1100] bg-gold-500 flex flex-col items-center justify-center p-6 sm:p-8 text-center">
+            <CheckCircle2 size={72} className="mb-4 sm:mb-6 text-slate-950 sm:w-24 sm:h-24" strokeWidth={3} />
+            <h2 className="text-3xl sm:text-5xl font-black uppercase text-slate-950 mb-3">Welcome!</h2>
+            <p className="text-xl sm:text-3xl font-black uppercase text-slate-800 break-words px-2">{lastCheckedInMember}</p>
           </div>
         )}
 
@@ -463,28 +463,28 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ members, onRefresh, act
             </form>
           </div>
         ) : (
-          <div className="flex-1 flex overflow-hidden">
-            <div className="flex-1 p-8 flex flex-col items-center justify-center">
-              <div className="max-w-2xl w-full space-y-8 text-center">
-                <h2 className="text-6xl font-black uppercase tracking-tighter">Check-In</h2>
+          <div className="flex-1 flex overflow-hidden flex-col lg:flex-row">
+            <div className="flex-1 p-4 sm:p-8 flex flex-col items-center justify-center overflow-y-auto">
+              <div className="max-w-2xl w-full space-y-6 sm:space-y-8 text-center">
+                <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tighter">Check-In</h2>
                 <div className="relative">
-                  <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500" size={28} />
-                  <input autoFocus placeholder="Name or phone…" className="w-full pl-16 pr-6 py-6 bg-slate-900 border-2 border-white/10 rounded-[2rem] text-2xl font-black outline-none focus:border-gold-500" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                  <Search className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 text-slate-500" size={22} />
+                  <input autoFocus placeholder="Name or phone…" className="w-full pl-12 sm:pl-16 pr-4 sm:pr-6 py-4 sm:py-6 bg-slate-900 border-2 border-white/10 rounded-[1.5rem] sm:rounded-[2rem] text-lg sm:text-2xl font-black outline-none focus:border-gold-500" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 </div>
                 {searchTerm.length >= 2 && (
                   <div className="space-y-3 text-left">
                     {filteredKioskMembers.length > 0 ? (
                       filteredKioskMembers.slice(0, 5).map((m) => (
-                        <button key={m.id} onClick={() => handleCheckIn(m, 'member')} className="w-full flex items-center justify-between p-5 bg-slate-900 rounded-2xl border border-white/5 hover:border-gold-500">
-                          <div>
-                            <div className="font-black text-xl uppercase">{m.name}</div>
+                        <button key={m.id} onClick={() => handleCheckIn(m, 'member')} className="w-full flex items-center justify-between p-4 sm:p-5 bg-slate-900 rounded-2xl border border-white/5 hover:border-gold-500">
+                          <div className="min-w-0 text-left">
+                            <div className="font-black text-base sm:text-xl uppercase truncate">{m.name}</div>
                             <div className="text-[10px] text-gold-500 font-black uppercase tracking-widest">{m.category || 'Member'}</div>
                           </div>
-                          <UserCheck size={22} className="text-gold-500" />
+                          <UserCheck size={22} className="text-gold-500 shrink-0" />
                         </button>
                       ))
                     ) : (
-                      <button onClick={() => { setRegistrationForm({ ...registrationForm, name: searchTerm }); setIsRegistering(true); }} className="w-full py-6 border-2 border-dashed border-white/20 rounded-2xl font-black uppercase text-slate-400 hover:text-gold-500">
+                      <button onClick={() => { setRegistrationForm({ ...registrationForm, name: searchTerm }); setIsRegistering(true); }} className="w-full py-5 sm:py-6 border-2 border-dashed border-white/20 rounded-2xl font-black uppercase text-slate-400 hover:text-gold-500 text-sm sm:text-base">
                         + Register First Timer
                       </button>
                     )}
@@ -577,25 +577,25 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ members, onRefresh, act
 
       {activeService && (
         <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Active Service</div>
-            <div className="font-black text-slate-900 uppercase tracking-tight">
+            <div className="font-black text-slate-900 uppercase tracking-tight text-sm sm:text-base break-words">
               {activeService.name} · {activeService.serviceDate}
-              <span className={`ml-2 text-[9px] px-2 py-0.5 rounded-lg ${activeService.status === 'open' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+              <span className={`ml-2 text-[9px] px-2 py-0.5 rounded-lg inline-block ${activeService.status === 'open' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
                 {activeService.status}
               </span>
             </div>
           </div>
           <div className="flex gap-4 text-center">
-            <div><div className="text-2xl font-black">{stats.total}</div><div className="text-[9px] font-black uppercase text-slate-400">Total</div></div>
-            <div><div className="text-2xl font-black text-emerald-600">{stats.membersPresent}</div><div className="text-[9px] font-black uppercase text-slate-400">Members</div></div>
-            <div><div className="text-2xl font-black text-gold-600">{stats.firstTimers}</div><div className="text-[9px] font-black uppercase text-slate-400">First Timers</div></div>
+            <div><div className="text-xl sm:text-2xl font-black">{stats.total}</div><div className="text-[9px] font-black uppercase text-slate-400">Total</div></div>
+            <div><div className="text-xl sm:text-2xl font-black text-emerald-600">{stats.membersPresent}</div><div className="text-[9px] font-black uppercase text-slate-400">Members</div></div>
+            <div><div className="text-xl sm:text-2xl font-black text-gold-600">{stats.firstTimers}</div><div className="text-[9px] font-black uppercase text-slate-400">First Timers</div></div>
           </div>
           {activeService.status === 'open' && (
             <button
               onClick={closeServiceAndAnalyze}
               disabled={saving}
-              className="px-5 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 disabled:opacity-60"
+              className="w-full md:w-auto px-5 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {saving ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={14} className="text-gold-400" />}
               Close & Run AI Report
@@ -843,7 +843,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ members, onRefresh, act
               <button type="button" onClick={() => setServiceModal(false)}><X size={18} /></button>
             </div>
             <input required className="w-full px-4 py-3 bg-slate-50 border rounded-xl font-bold" value={serviceForm.name} onChange={(e) => setServiceForm({ ...serviceForm, name: e.target.value })} placeholder="Sunday 1st Service" />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input required type="date" className="w-full px-4 py-3 bg-slate-50 border rounded-xl font-bold" value={serviceForm.serviceDate} onChange={(e) => setServiceForm({ ...serviceForm, serviceDate: e.target.value })} />
               <input type="time" className="w-full px-4 py-3 bg-slate-50 border rounded-xl font-bold" value={serviceForm.serviceTime} onChange={(e) => setServiceForm({ ...serviceForm, serviceTime: e.target.value })} />
             </div>
