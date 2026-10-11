@@ -73,8 +73,10 @@ const Logo: React.FC<LogoProps> = ({ className = "", size = 120, hideText = fals
       </svg>
       
       {!hideText && (
-        <div className="mt-4 text-center">
-          <span className="text-4xl font-serif font-black text-gold-500 tracking-[0.1em] uppercase block leading-none" style={{ fontFamily: 'Georgia, serif' }}>C.C.C</span>
+        <div className="mt-4 text-center px-2">
+          <span className="text-lg sm:text-xl font-serif font-black text-gold-500 tracking-[0.08em] uppercase block leading-snug" style={{ fontFamily: 'Georgia, serif' }}>
+            Charis Christian Center
+          </span>
           <div className="w-20 h-1 bg-gold-500 mx-auto mt-2 rounded-full opacity-80"></div>
         </div>
       )}

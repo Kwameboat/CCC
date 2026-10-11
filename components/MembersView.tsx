@@ -351,10 +351,12 @@ const MembersView: React.FC<MembersViewProps> = ({ members, onRefresh, activeBra
               id="member-id-card"
               className="w-[320px] h-[500px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden relative border-8 border-gold-500/10 flex flex-col"
             >
-              <div className="h-32 bg-slate-950 p-6 flex items-center justify-center text-white">
-                <div className="flex flex-col items-center gap-1 z-10">
-                  <div className="text-gold-500 font-black text-xl tracking-[0.2em]">C.C.C</div>
-                  <span className="text-[10px] font-black uppercase tracking-[0.4em] opacity-60">Charis Center</span>
+              <div className="h-32 bg-slate-950 p-5 flex items-center justify-center text-white">
+                <div className="flex flex-col items-center gap-1.5 z-10 text-center px-2">
+                  <div className="text-gold-500 font-black text-sm sm:text-base tracking-[0.12em] uppercase leading-tight">
+                    Charis Christian Center
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-[0.35em] opacity-60">Member Identity Card</span>
                 </div>
               </div>
               <div className="flex-1 flex flex-col items-center px-8 -mt-10 z-10">
