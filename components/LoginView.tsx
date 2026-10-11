@@ -102,7 +102,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
           <div className="p-10 pt-12">
             <div className="mb-10 text-center">
               <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">Administrator Login</h2>
-              <p className="text-slate-500 text-sm font-medium leading-relaxed">Secure gateway for CCC authorized personnel only.</p>
+              <p className="text-slate-500 text-sm font-medium leading-relaxed">Secure gateway for Charis Christian Center staff only.</p>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-6">

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { View } from '../types';
 import Logo from './Logo';
+import { CHURCH_NAME_UPPER } from '../lib/brand';
 import { AppModule, canAccessModule } from '../lib/permissions';
 
 interface SidebarProps {
@@ -70,8 +71,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         {showLabels ? (
           <div className="flex items-center gap-3 overflow-hidden min-w-0">
             <Logo size={36} hideText={true} className="flex-shrink-0" />
-            <span className="font-black text-base sm:text-lg tracking-tighter whitespace-nowrap uppercase text-gold-500 truncate">
-              Charis Console
+            <span className="font-black text-[11px] sm:text-sm tracking-tighter whitespace-nowrap uppercase text-gold-500 truncate leading-tight">
+              {CHURCH_NAME_UPPER}
             </span>
           </div>
         ) : (

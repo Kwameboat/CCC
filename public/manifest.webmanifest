@@ -1,6 +1,6 @@
 {
-  "name": "Charis Christian Center Console",
-  "short_name": "CCC Console",
+  "name": "Charis Christian Center",
+  "short_name": "Charis CC",
   "description": "Church management console for Charis Christian Center — members, attendance, finance, and more.",
   "start_url": "/",
   "scope": "/",
