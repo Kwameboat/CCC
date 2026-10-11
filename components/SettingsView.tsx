@@ -136,6 +136,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                   <li>In Supabase SQL Editor, run <code className="text-gold-300">supabase/schema.sql</code> (v7.0).</li>
                   <li>For existing DBs, also run <code className="text-gold-300">supabase/migrations/003_service_attendance.sql</code> (per-service attendance + absence alerts).</li>
                   <li>For member tithe/pledge tracking, run <code className="text-gold-300">supabase/migrations/004_member_tithe_pledge.sql</code>.</li>
+                  <li>If the left menu disappears (role stuck on Viewer), run <code className="text-gold-300">supabase/migrations/005_restore_admin_access.sql</code>.</li>
                   <li>Create staff users under Supabase Authentication → Users.</li>
                   <li>Enable Realtime for the <code className="text-gold-300">attendance</code> table if kiosk live feed is needed.</li>
                   <li>Redeploy after env changes.</li>

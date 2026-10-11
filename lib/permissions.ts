@@ -18,8 +18,10 @@ export const APP_MODULES: { id: AppModule; label: string; description: string }[
   { id: 'settings', label: 'Settings', description: 'Admin & staff control' },
 ];
 
+export const ALL_MODULE_IDS: AppModule[] = APP_MODULES.map((m) => m.id);
+
 export const ROLE_PRESETS: Record<Exclude<StaffRole, 'custom'>, AppModule[]> = {
-  admin: APP_MODULES.map((m) => m.id),
+  admin: ALL_MODULE_IDS,
   pastor: ['dashboard', 'members', 'attendance', 'counseling', 'sermons', 'events', 'communication'],
   finance: ['dashboard', 'finance', 'store'],
   kiosk: ['attendance'],
@@ -45,12 +47,24 @@ export interface StaffProfile {
   branchId?: string | null;
 }
 
-export const modulesForRole = (role: StaffRole, custom?: string[] | null): AppModule[] => {
-  if (role === 'custom') {
-    const allowed = new Set(APP_MODULES.map((m) => m.id));
-    return (custom || []).filter((m): m is AppModule => allowed.has(m as AppModule));
+export const normalizeRole = (role: string | null | undefined): StaffRole => {
+  const r = (role || 'viewer').toLowerCase().trim();
+  if (r === 'admin' || r === 'pastor' || r === 'finance' || r === 'kiosk' || r === 'viewer' || r === 'custom') {
+    return r;
   }
-  return ROLE_PRESETS[role] || ROLE_PRESETS.viewer;
+  return 'viewer';
+};
+
+export const modulesForRole = (role: StaffRole | string | null | undefined, custom?: string[] | null): AppModule[] => {
+  const normalized = normalizeRole(role);
+  const allowed = new Set(ALL_MODULE_IDS);
+  const fromDb = (custom || []).filter((m): m is AppModule => allowed.has(m as AppModule));
+
+  if (normalized === 'admin') return ALL_MODULE_IDS;
+  if (normalized === 'custom') return fromDb;
+  // Honor explicit permissions saved in the database (manual SQL / staff edits)
+  if (fromDb.length > 0) return fromDb;
+  return ROLE_PRESETS[normalized] || ROLE_PRESETS.viewer;
 };
 
 export const canAccessModule = (
@@ -58,21 +72,16 @@ export const canAccessModule = (
   role: string | null | undefined,
   permissions?: string[] | null
 ): boolean => {
-  const normalized = (role || 'viewer') as StaffRole;
+  const normalized = normalizeRole(role);
   if (normalized === 'admin') return true;
-  const allowed = modulesForRole(
-    ['pastor', 'finance', 'kiosk', 'viewer', 'custom'].includes(normalized) ? normalized : 'viewer',
-    permissions
-  );
-  return allowed.includes(module);
+  return modulesForRole(normalized, permissions).includes(module);
 };
 
 export const defaultLandingView = (
   role: string | null | undefined,
   permissions?: string[] | null
 ): AppModule => {
-  const order = APP_MODULES.map((m) => m.id);
-  for (const mod of order) {
+  for (const mod of ALL_MODULE_IDS) {
     if (canAccessModule(mod, role, permissions)) return mod;
   }
   return 'dashboard';

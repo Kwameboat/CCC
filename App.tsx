@@ -23,6 +23,7 @@ import {
   canAccessModule,
   defaultLandingView,
   modulesForRole,
+  normalizeRole,
   StaffRole,
 } from './lib/permissions';
 
@@ -143,8 +144,24 @@ const App: React.FC = () => {
       return;
     }
 
-    const role = (data?.role || 'admin') as StaffRole;
-    const perms = modulesForRole(role, data?.permissions);
+    let role = normalizeRole(data?.role || 'admin');
+    let perms = modulesForRole(role, data?.permissions);
+
+    // If this account was locked to viewer (common after manual DB edits) and there is
+    // no active admin left, restore full access via SECURITY DEFINER RPC.
+    if (role !== 'admin') {
+      try {
+        const { data: restored } = await supabase.rpc('restore_admin_if_none');
+        if (restored && (restored as { ok?: boolean }).ok) {
+          role = 'admin';
+          perms = modulesForRole('admin');
+          showToast('Admin access restored. Full menu is available again.', 'success');
+        }
+      } catch {
+        /* RPC may not be installed yet — migration 005 handles that */
+      }
+    }
+
     setUserRole(role);
     setUserName(data?.full_name || '');
     setUserPermissions(perms);
@@ -342,6 +359,46 @@ const App: React.FC = () => {
             {dataError && (
               <div className="mb-4 px-3 sm:px-4 py-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl text-xs font-bold break-words">
                 {dataError}
+              </div>
+            )}
+            {normalizeRole(userRole) === 'viewer' && (
+              <div className="mb-4 px-4 py-4 bg-rose-50 border border-rose-200 text-rose-900 rounded-2xl text-sm space-y-3">
+                <div>
+                  <div className="font-black uppercase tracking-tight text-rose-700">Limited menu — role is Viewer</div>
+                  <p className="text-xs font-medium mt-1 text-rose-800/80">
+                    Your <code className="font-bold">profiles.role</code> is set to <strong>viewer</strong>, so only Dashboard shows.
+                    In Supabase SQL Editor run <code className="font-bold">supabase/migrations/005_restore_admin_access.sql</code>, then refresh.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="px-4 py-2 bg-rose-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest"
+                    onClick={async () => {
+                      const res = await fetch('/supabase/migrations/005_restore_admin_access.sql');
+                      const text = await res.text();
+                      await navigator.clipboard.writeText(text);
+                      showToast('SQL copied. Paste in Supabase SQL Editor, run it, then refresh.', 'success');
+                    }}
+                  >
+                    Copy Restore SQL
+                  </button>
+                  <button
+                    type="button"
+                    className="px-4 py-2 bg-white border border-rose-200 text-rose-800 rounded-xl text-[10px] font-black uppercase tracking-widest"
+                    onClick={async () => {
+                      const { data } = await supabase.rpc('restore_admin_if_none');
+                      if (data && (data as { ok?: boolean }).ok) {
+                        showToast('Admin restored. Reloading…', 'success');
+                        window.location.reload();
+                      } else {
+                        showToast('Run the Restore SQL in Supabase (an admin may already exist).', 'info');
+                      }
+                    }}
+                  >
+                    Try Auto-Restore
+                  </button>
+                </div>
               </div>
             )}
             <div className="mb-4 sm:mb-6 flex flex-wrap items-center gap-2 sm:gap-3">
