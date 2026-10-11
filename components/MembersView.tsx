@@ -8,6 +8,8 @@ import { Member } from '../types';
 import { supabase } from '../lib/supabase';
 import { showToast } from '../lib/toast';
 import { fileToCompressedDataUrl } from '../lib/image';
+import { CHURCH_NAME_UPPER } from '../lib/brand';
+import Logo from './Logo';
 
 interface MembersViewProps {
   members: Member[];
@@ -149,14 +151,33 @@ const MembersView: React.FC<MembersViewProps> = ({ members, onRefresh, activeBra
         <head>
           <title>Member ID - ${selectedMember?.name}</title>
           <script src="https://cdn.tailwindcss.com"><\/script>
+          <script>
+            tailwind.config = {
+              theme: {
+                extend: {
+                  colors: {
+                    gold: {
+                      50: '#fbf7ed', 100: '#f4e9cf', 200: '#ead29d', 300: '#ddb463',
+                      400: '#d1983c', 500: '#c59235', 600: '#a37129', 700: '#815423',
+                      800: '#6a4521', 900: '#5a3b1f',
+                    }
+                  }
+                }
+              }
+            };
+          <\/script>
+          <style>
+            @page { margin: 12mm; }
+            body { font-family: 'Segoe UI', system-ui, sans-serif; }
+          </style>
         </head>
-        <body class="flex items-center justify-center min-h-screen bg-white">
-          <div class="scale-[1.5] origin-center">
+        <body class="flex items-center justify-center min-h-screen bg-white p-8">
+          <div class="scale-[1.35] origin-center">
             ${cardElement.outerHTML}
           </div>
           <script>
             window.onload = () => {
-              setTimeout(() => { window.print(); window.close(); }, 800);
+              setTimeout(() => { window.print(); window.close(); }, 900);
             };
           <\/script>
         </body>
@@ -346,56 +367,109 @@ const MembersView: React.FC<MembersViewProps> = ({ members, onRefresh, activeBra
 
       {isIDCardOpen && selectedMember && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md">
-          <div className="flex flex-col items-center gap-6">
+          <div className="flex flex-col items-center gap-6 max-w-full">
             <div
               id="member-id-card"
-              className="w-[320px] h-[500px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden relative border-8 border-gold-500/10 flex flex-col"
+              className="w-[340px] max-w-[92vw] bg-white rounded-[1.75rem] shadow-2xl overflow-hidden relative flex flex-col border border-slate-200"
+              style={{ fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif" }}
             >
-              <div className="h-32 bg-slate-950 p-5 flex items-center justify-center text-white">
-                <div className="flex flex-col items-center gap-1.5 z-10 text-center px-2">
-                  <div className="text-gold-500 font-black text-sm sm:text-base tracking-[0.12em] uppercase leading-tight">
-                    Charis Christian Center
+              {/* Top brand bar */}
+              <div className="bg-slate-950 px-5 pt-5 pb-14 relative">
+                <div
+                  className="absolute inset-x-0 bottom-0 h-1"
+                  style={{ background: 'linear-gradient(90deg, #a37129, #c59235, #ddb463, #c59235, #a37129)' }}
+                />
+                <div className="flex items-center gap-3">
+                  <div className="shrink-0 rounded-full bg-slate-900 ring-2 ring-gold-500/50 p-1">
+                    <Logo size={44} hideText className="!block" />
                   </div>
-                  <span className="text-[9px] font-black uppercase tracking-[0.35em] opacity-60">Member Identity Card</span>
+                  <div className="min-w-0 text-left">
+                    <div className="text-gold-400 font-black text-[13px] uppercase tracking-[0.06em] leading-snug">
+                      {CHURCH_NAME_UPPER}
+                    </div>
+                    <div className="text-white/70 text-[10px] font-bold uppercase tracking-[0.22em] mt-1">
+                      Official Membership Card
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="flex-1 flex flex-col items-center px-8 -mt-10 z-10">
-                <div className="w-32 h-32 rounded-3xl border-4 border-white shadow-xl overflow-hidden bg-slate-200 mb-6">
-                  <img src={getPhotoSrc(selectedMember.photo)} className="w-full h-full object-cover" alt="" />
+
+              {/* Photo */}
+              <div className="flex justify-center -mt-11 relative z-10 px-6">
+                <div className="w-[132px] h-[132px] rounded-2xl border-[5px] border-white shadow-lg overflow-hidden bg-slate-100 ring-1 ring-slate-200">
+                  <img
+                    src={getPhotoSrc(selectedMember.photo)}
+                    className="w-full h-full object-cover"
+                    alt={selectedMember.name}
+                  />
                 </div>
-                <h3 className="text-xl font-black text-slate-900 text-center leading-tight mb-1 uppercase tracking-tighter">
+              </div>
+
+              {/* Identity block */}
+              <div className="px-6 pt-4 pb-2 text-center">
+                <h3 className="text-[22px] font-black text-slate-900 leading-tight tracking-tight uppercase">
                   {selectedMember.name}
                 </h3>
-                <p className="text-gold-600 font-black uppercase tracking-[0.2em] text-[10px]">
-                  {selectedMember.category}
-                </p>
-                {/worker/i.test(selectedMember.category || '') && (
-                  <p className="text-slate-600 font-black uppercase tracking-[0.15em] text-[10px] mt-2 mb-6">
-                    {selectedMember.dept?.trim() ? selectedMember.dept : 'Department not set'}
-                  </p>
-                )}
-                {!/worker/i.test(selectedMember.category || '') && <div className="mb-6" />}
-                <div className="w-full space-y-3 pt-4 border-t border-slate-100">
-                  <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-slate-400">
-                    <span>Member ID</span>
-                    <span className="font-mono text-slate-700">#{selectedMember.id.slice(-6).toUpperCase()}</span>
+                <div className="mt-3 inline-flex items-center justify-center px-3 py-1 rounded-md bg-gold-50 border border-gold-200">
+                  <span className="text-[11px] font-black uppercase tracking-[0.18em] text-gold-700">
+                    {selectedMember.category || 'Member'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Readable detail rows */}
+              <div className="px-6 py-4 space-y-3 flex-1">
+                <div className="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 text-left">
+                  <div className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Department</div>
+                  <div className="text-[14px] font-bold text-slate-800 uppercase tracking-wide">
+                    {selectedMember.dept?.trim() || 'Congregation'}
                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 text-left">
+                    <div className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Status</div>
+                    <div className="text-[13px] font-bold text-emerald-700 uppercase tracking-wide">
+                      {selectedMember.status || 'Active'}
+                    </div>
+                  </div>
+                  <div className="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 text-left">
+                    <div className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Contact</div>
+                    <div className="text-[12px] font-bold text-slate-800 tracking-wide truncate">
+                      {selectedMember.phone?.trim() || '—'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer ID */}
+              <div className="mt-auto bg-slate-950 px-5 py-4 flex items-center justify-between gap-3">
+                <div className="text-left min-w-0">
+                  <div className="text-[9px] font-black uppercase tracking-[0.25em] text-white/50">Member ID</div>
+                  <div className="text-[16px] font-black tracking-[0.12em] text-gold-400 font-mono mt-0.5">
+                    #{selectedMember.id.slice(-6).toUpperCase()}
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-[9px] font-black uppercase tracking-[0.2em] text-white/50">Valid</div>
+                  <div className="text-[12px] font-bold text-white mt-0.5">Church Use</div>
                 </div>
               </div>
             </div>
-            <div className="flex gap-4">
+
+            <div className="flex flex-wrap justify-center gap-3">
               <button
                 onClick={() => setIsIDCardOpen(false)}
-                className="px-6 py-2 bg-white/20 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/30"
+                className="px-6 py-2.5 bg-white/15 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/25"
               >
                 Close
               </button>
               <button
                 onClick={handlePrint}
                 disabled={isGenerating}
-                className="px-8 py-2 bg-gold-500 text-black rounded-xl text-xs font-black uppercase tracking-widest hover:bg-gold-600 flex items-center gap-2"
+                className="px-8 py-2.5 bg-gold-500 text-black rounded-xl text-xs font-black uppercase tracking-widest hover:bg-gold-600 flex items-center gap-2 disabled:opacity-60"
               >
-                <Printer size={16} /> Print ID
+                {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
+                Print ID
               </button>
             </div>
           </div>
