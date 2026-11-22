@@ -13,6 +13,7 @@ import EventsView from './components/EventsView';
 import CommunicationView from './components/CommunicationView';
 import SettingsView from './components/SettingsView';
 import CounselingView from './components/CounselingView';
+import OnlineServiceView from './components/OnlineServiceView';
 import LoginView from './components/LoginView';
 import InstallAppButton from './components/InstallAppButton';
 import { supabase, hasSupabaseConfig } from './lib/supabase';
@@ -285,6 +286,8 @@ const App: React.FC = () => {
         return <SermonsView branchId={activeBranchId} />;
       case 'events':
         return <EventsView branchId={activeBranchId} />;
+      case 'online':
+        return <OnlineServiceView branchId={activeBranchId} branchName={activeBranch?.name || ''} />;
       case 'communication':
         return <CommunicationView members={activeBranchMembers} />;
       case 'cms':
