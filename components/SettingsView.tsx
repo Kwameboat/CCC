@@ -7,6 +7,7 @@ import {
 import { Branch } from '../types';
 import { checkSupabaseConnection, supabase } from '../lib/supabase';
 import { showToast } from '../lib/toast';
+import { copySqlPath } from '../lib/sqlHint';
 import StaffManager from './StaffManager';
 
 type SettingsSection = 'db' | 'deployment' | 'roles' | 'branches' | 'payments' | 'automations';
@@ -60,22 +61,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({
   };
 
   const handleCopySchema = async () => {
-    try {
-      const res = await fetch('/supabase/schema.sql');
-      if (res.ok) {
-        const text = await res.text();
-        await navigator.clipboard.writeText(text);
-      } else {
-        await navigator.clipboard.writeText(
-          'Open supabase/schema.sql in the repository and run it in the Supabase SQL Editor.'
-        );
-      }
-      setIsCopied(true);
-      showToast('Schema instructions copied.', 'success');
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch {
-      showToast('Copy failed. Open supabase/schema.sql manually.', 'error');
-    }
+    await copySqlPath('supabase/schema.sql');
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   };
 
   const handleRegisterCampus = async (e: React.FormEvent) => {
@@ -277,16 +265,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
               <button
                 type="button"
                 className="ml-3 text-gold-700 font-black uppercase text-[10px] tracking-widest hover:underline"
-                onClick={async () => {
-                  try {
-                    const res = await fetch('/supabase/migrations/002_staff_permissions.sql');
-                    const text = await res.text();
-                    await navigator.clipboard.writeText(text);
-                    showToast('Staff permissions SQL copied.', 'success');
-                  } catch {
-                    showToast('Open supabase/migrations/002_staff_permissions.sql manually.', 'info');
-                  }
-                }}
+                onClick={() => copySqlPath('supabase/migrations/002_staff_permissions.sql')}
               >
                 Copy SQL
               </button>

@@ -10,6 +10,17 @@ interface LoginViewProps {
   onLogin: (session: Session | { user: { email: string; id: string }; isDemo: true }) => void;
 }
 
+const NETWORK_ERROR_MESSAGE =
+  'Cannot reach the Supabase server. The project may be paused or deleted — restore it in the Supabase dashboard, or check VITE_SUPABASE_URL.';
+
+const friendlyAuthError = (message?: string): string => {
+  const m = (message || '').toLowerCase();
+  if (m.includes('failed to fetch') || m.includes('networkerror') || m.includes('load failed') || m.includes('fetch failed')) {
+    return navigator.onLine ? NETWORK_ERROR_MESSAGE : 'You appear to be offline. Check your connection and try again.';
+  }
+  return message || 'Sign-in failed.';
+};
+
 const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,14 +55,14 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
       });
 
       if (authError) {
-        setError(authError.message);
+        setError(friendlyAuthError(authError.message));
         setIsProcessing(false);
         return;
       }
 
       if (data.session) onLogin(data.session);
     } catch {
-      setError('Unable to reach authentication service. Check your connection and try again.');
+      setError(friendlyAuthError('failed to fetch'));
       setIsProcessing(false);
     }
   };
@@ -68,7 +79,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
     });
     setIsProcessing(false);
     if (resetError) {
-      setError(resetError.message);
+      setError(friendlyAuthError(resetError.message));
       return;
     }
     setResetSent(true);

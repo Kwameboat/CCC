@@ -23,8 +23,14 @@ Production church management console for Charis Christian Center.
 ## Production setup (required)
 
 1. **Supabase**
-   - Run [`supabase/schema.sql`](supabase/schema.sql) in the SQL Editor (v7.0).
-   - Create staff users in Authentication → Users.
+   - **New project:** paste [`supabase/setup_all.sql`](supabase/setup_all.sql) into the SQL Editor and Run (it is schema + 002–006 in one file).
+   - Existing project: in the SQL Editor run, in order: [`supabase/schema.sql`](supabase/schema.sql), then
+     `supabase/migrations/002` → `006`. **`006_security_hardening.sql` is required** — it
+     enforces role-based access in the database.
+   - The first account to sign up becomes admin. Later signups get an *inactive viewer*
+     profile until an admin activates them in Settings → Staff.
+   - If the project is on the free tier, Supabase pauses it after inactivity; the login
+     screen will then say it cannot reach the server. Restore it from the Supabase dashboard.
    - Enable Realtime on `attendance` if using the live kiosk feed.
 
 2. **Environment variables** (local `.env.local` and Vercel Production/Preview)
@@ -66,7 +72,8 @@ npm run preview
 
 - Secrets must live in env vars — the app refuses to boot without them.
 - Demo login is disabled unless `import.meta.env.DEV` or `VITE_ENABLE_DEMO_LOGIN=true`.
-- RLS currently allows all authenticated staff; tighten per `profiles.role` when you need stricter isolation.
+- RLS enforces module access per `profiles.role` / `permissions` (migration 006); only admins can change roles.
+- SQL files are not served from the public site; open them from the repository.
 - Payment provider secret keys must only live in Edge Functions, never the browser.
 - Prefer Supabase Storage for member photos instead of large base64 strings.
 
