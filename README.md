@@ -23,9 +23,9 @@ Production church management console for Charis Christian Center.
 ## Production setup (required)
 
 1. **Supabase**
-   - **New project:** paste [`supabase/setup_all.sql`](supabase/setup_all.sql) into the SQL Editor and Run (it is schema + 002–006 in one file).
+   - **New project:** paste [`supabase/setup_all.sql`](supabase/setup_all.sql) into the SQL Editor and Run (it is schema + 002–007 in one file).
    - Existing project: in the SQL Editor run, in order: [`supabase/schema.sql`](supabase/schema.sql), then
-     `supabase/migrations/002` → `006`. **`006_security_hardening.sql` is required** — it
+     `supabase/migrations/002` → `007`. **`006_security_hardening.sql` is required** — it
      enforces role-based access in the database.
    - The first account to sign up becomes admin. Later signups get an *inactive viewer*
      profile until an admin activates them in Settings → Staff.
