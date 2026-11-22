@@ -1,5 +1,5 @@
 -- CCC member-linked tithe & pledge tracking
--- Run in Supabase SQL Editor: https://supabase.com/dashboard/project/fsfpegyvqwroeunehfml/sql/new
+-- Run in Supabase SQL Editor: https://supabase.com/dashboard/project/txulgrxnoqdndtskbekm/sql/new
 
 ALTER TABLE transactions
   ADD COLUMN IF NOT EXISTS member_id UUID REFERENCES members(id) ON DELETE SET NULL,

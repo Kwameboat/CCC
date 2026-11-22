@@ -1,5 +1,5 @@
 -- CCC: restore sidebar access after accidental viewer lockout
--- Run in Supabase SQL Editor: https://supabase.com/dashboard/project/fsfpegyvqwroeunehfml/sql/new
+-- Run in Supabase SQL Editor: https://supabase.com/dashboard/project/txulgrxnoqdndtskbekm/sql/new
 
 -- 1) If there is currently NO active admin, promote the oldest profile to admin
 UPDATE profiles
@@ -22,23 +22,9 @@ AND NOT EXISTS (
   WHERE role = 'admin' AND COALESCE(is_active, true)
 );
 
--- 2) Promote common owner account names back to admin (safe if already admin)
-UPDATE profiles
-SET
-  role = 'admin',
-  permissions = ARRAY[
-    'dashboard','members','finance','attendance','counseling',
-    'store','sermons','events','communication','cms','settings'
-  ],
-  is_active = true,
-  updated_at = NOW()
-WHERE role IS DISTINCT FROM 'admin'
-  AND (
-    email ILIKE '%boateng%'
-    OR full_name ILIKE '%boateng%'
-    OR email ILIKE '%kwame%'
-    OR full_name ILIKE '%kwame%'
-  );
+-- 2) (removed) Name-based promotion was unsafe: anyone could sign up with a matching
+--    name or email and become admin. Promote a specific account by id instead, e.g.
+--    UPDATE profiles SET role = 'admin', is_active = true WHERE email = 'owner@example.org';
 
 -- 3) RPC: any signed-in staff can call this if the church has zero admins
 CREATE OR REPLACE FUNCTION public.restore_admin_if_none()

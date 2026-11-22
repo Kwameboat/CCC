@@ -7,6 +7,7 @@ import {
 import { Member } from '../types';
 import { supabase } from '../lib/supabase';
 import { showToast } from '../lib/toast';
+import { copySqlPath } from '../lib/sqlHint';
 import {
   AttendanceLog,
   ServiceRecord,
@@ -523,11 +524,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ members, onRefresh, act
           Service tables are missing. Run <code className="font-bold">supabase/migrations/003_service_attendance.sql</code> in the Supabase SQL Editor, then refresh.
           <button
             className="ml-3 text-amber-700 font-black uppercase text-[10px] tracking-widest underline"
-            onClick={async () => {
-              const res = await fetch('/supabase/migrations/003_service_attendance.sql');
-              await navigator.clipboard.writeText(await res.text());
-              showToast('SQL copied.', 'success');
-            }}
+            onClick={() => copySqlPath('supabase/migrations/003_service_attendance.sql')}
           >
             Copy SQL
           </button>

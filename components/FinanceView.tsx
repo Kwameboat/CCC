@@ -6,6 +6,7 @@ import {
 import { Member } from '../types';
 import { supabase } from '../lib/supabase';
 import { showToast } from '../lib/toast';
+import { copySqlPath } from '../lib/sqlHint';
 
 interface TransactionRecord {
   id: string;
@@ -371,12 +372,7 @@ const FinanceView: React.FC<FinanceViewProps> = ({ branchId, members }) => {
           </span>
           <button
             className="px-4 py-2 bg-amber-600 text-white rounded-xl text-xs font-black uppercase tracking-widest"
-            onClick={async () => {
-              const res = await fetch('/supabase/migrations/004_member_tithe_pledge.sql');
-              const text = await res.text();
-              await navigator.clipboard.writeText(text);
-              showToast('SQL copied. Paste in Supabase SQL Editor.', 'success');
-            }}
+            onClick={() => copySqlPath('supabase/migrations/004_member_tithe_pledge.sql')}
           >
             Copy SQL
           </button>

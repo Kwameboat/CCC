@@ -24,7 +24,6 @@ import {
   defaultLandingView,
   modulesForRole,
   normalizeRole,
-  StaffRole,
 } from './lib/permissions';
 
 type AppSession = Session | { user: { email?: string; id: string }; isDemo: true };
@@ -58,7 +57,7 @@ const App: React.FC = () => {
   const [activeBranchId, setActiveBranchId] = useState<string>('');
   const [members, setMembers] = useState<Member[]>([]);
   const [dataError, setDataError] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string>('admin');
+  const [userRole, setUserRole] = useState<string>('viewer');
   const [userName, setUserName] = useState<string>('');
   const [userPermissions, setUserPermissions] = useState<string[]>([]);
   const [accessReady, setAccessReady] = useState(false);
@@ -117,17 +116,13 @@ const App: React.FC = () => {
       .eq('id', userId)
       .maybeSingle();
 
-    // Bootstrap profile for first sign-ins (e.g. first admin created in dashboard)
+    // Bootstrap a missing profile. The database decides the role: non-admin inserts are
+    // forced to an inactive viewer (migration 006); the sole first account is promoted below.
     if (!data && !error) {
-      const { count } = await supabase.from('profiles').select('id', { count: 'exact', head: true });
-      const bootstrapRole: StaffRole = !count || count === 0 ? 'admin' : 'viewer';
-      await supabase.from('profiles').upsert({
+      await supabase.from('profiles').insert({
         id: userId,
         full_name: email?.split('@')[0] || 'Staff',
         email: email || null,
-        role: bootstrapRole,
-        permissions: modulesForRole(bootstrapRole),
-        is_active: true,
       });
       ({ data } = await supabase
         .from('profiles')
@@ -136,30 +131,31 @@ const App: React.FC = () => {
         .maybeSingle());
     }
 
-    if (data && data.is_active === false) {
-      showToast('Your staff account is deactivated. Contact an administrator.', 'error');
-      await supabase.auth.signOut();
-      setSession(null);
-      setAccessReady(true);
-      return;
-    }
-
-    let role = normalizeRole(data?.role || 'admin');
+    let role = normalizeRole(data?.role || 'viewer');
     let perms = modulesForRole(role, data?.permissions);
+    let isActive = data?.is_active !== false;
 
-    // If this account was locked to viewer (common after manual DB edits) and there is
-    // no active admin left, restore full access via SECURITY DEFINER RPC.
-    if (role !== 'admin') {
+    // If there is no active admin left, the server lets an eligible account reclaim admin.
+    if (data && role !== 'admin') {
       try {
         const { data: restored } = await supabase.rpc('restore_admin_if_none');
         if (restored && (restored as { ok?: boolean }).ok) {
           role = 'admin';
           perms = modulesForRole('admin');
+          isActive = true;
           showToast('Admin access restored. Full menu is available again.', 'success');
         }
       } catch {
-        /* RPC may not be installed yet — migration 005 handles that */
+        /* RPC may not be installed yet — migration 005/006 handles that */
       }
+    }
+
+    if (!isActive) {
+      showToast('Your staff account is inactive or awaiting approval. Contact an administrator.', 'error');
+      await supabase.auth.signOut();
+      setSession(null);
+      setAccessReady(true);
+      return;
     }
 
     setUserRole(role);
@@ -367,22 +363,10 @@ const App: React.FC = () => {
                   <div className="font-black uppercase tracking-tight text-rose-700">Limited menu — role is Viewer</div>
                   <p className="text-xs font-medium mt-1 text-rose-800/80">
                     Your <code className="font-bold">profiles.role</code> is set to <strong>viewer</strong>, so only Dashboard shows.
-                    In Supabase SQL Editor run <code className="font-bold">supabase/migrations/005_restore_admin_access.sql</code>, then refresh.
+                    In Supabase SQL Editor run <code className="font-bold">supabase/migrations/005_restore_admin_access.sql</code> from the repository, then refresh.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="px-4 py-2 bg-rose-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest"
-                    onClick={async () => {
-                      const res = await fetch('/supabase/migrations/005_restore_admin_access.sql');
-                      const text = await res.text();
-                      await navigator.clipboard.writeText(text);
-                      showToast('SQL copied. Paste in Supabase SQL Editor, run it, then refresh.', 'success');
-                    }}
-                  >
-                    Copy Restore SQL
-                  </button>
                   <button
                     type="button"
                     className="px-4 py-2 bg-white border border-rose-200 text-rose-800 rounded-xl text-[10px] font-black uppercase tracking-widest"
