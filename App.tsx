@@ -131,6 +131,10 @@ const App: React.FC = () => {
         .maybeSingle());
     }
 
+    if (error) {
+      setDataError(`Could not load your staff profile (${error.message}). Run supabase/migrations/007_api_grants.sql in Supabase.`);
+    }
+
     let role = normalizeRole(data?.role || 'viewer');
     let perms = modulesForRole(role, data?.permissions);
     let isActive = data?.is_active !== false;
