@@ -13,6 +13,7 @@ export const APP_MODULES: { id: AppModule; label: string; description: string }[
   { id: 'store', label: 'Store', description: 'Inventory catalog' },
   { id: 'sermons', label: 'Sermons', description: 'Message library' },
   { id: 'events', label: 'Events', description: 'Programs & calendar' },
+  { id: 'online', label: 'Online Service', description: 'Livestream & online church' },
   { id: 'communication', label: 'Broadcast', description: 'Member messaging' },
   { id: 'cms', label: 'CMS Portal', description: 'Website pages' },
   { id: 'settings', label: 'Settings', description: 'Admin & staff control' },
@@ -22,7 +23,7 @@ export const ALL_MODULE_IDS: AppModule[] = APP_MODULES.map((m) => m.id);
 
 export const ROLE_PRESETS: Record<Exclude<StaffRole, 'custom'>, AppModule[]> = {
   admin: ALL_MODULE_IDS,
-  pastor: ['dashboard', 'members', 'attendance', 'counseling', 'sermons', 'events', 'communication'],
+  pastor: ['dashboard', 'members', 'attendance', 'counseling', 'sermons', 'events', 'communication', 'online'],
   finance: ['dashboard', 'finance', 'store'],
   kiosk: ['attendance'],
   viewer: ['dashboard'],

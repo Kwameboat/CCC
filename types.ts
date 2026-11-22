@@ -60,4 +60,4 @@ export interface Transaction {
   date: string;
 }
 
-export type View = 'dashboard' | 'members' | 'finance' | 'attendance' | 'cms' | 'store' | 'sermons' | 'events' | 'communication' | 'settings' | 'counseling' | 'branches';
+export type View = 'dashboard' | 'members' | 'finance' | 'attendance' | 'cms' | 'store' | 'sermons' | 'events' | 'communication' | 'settings' | 'counseling' | 'online' | 'branches';

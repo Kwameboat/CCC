@@ -14,6 +14,7 @@ import {
   HeartHandshake,
   Lock,
   X,
+  Radio,
 } from 'lucide-react';
 import { View } from '../types';
 import Logo from './Logo';
@@ -46,6 +47,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'store', icon: ShoppingBag, label: 'Store' },
     { id: 'sermons', icon: Mic2, label: 'Sermons' },
     { id: 'events', icon: Calendar, label: 'Events' },
+    { id: 'online', icon: Radio, label: 'Online Service' },
     { id: 'communication', icon: MessageSquare, label: 'Broadcast' },
     { id: 'settings', icon: Settings, label: 'Settings' },
   ];

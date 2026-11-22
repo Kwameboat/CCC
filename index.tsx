@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import LiveServicePage from './components/LiveServicePage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import PwaUpdateToast from './components/PwaUpdateToast';
 import { registerServiceWorker } from './lib/pwa';
@@ -12,11 +13,14 @@ if (!rootElement) {
 
 registerServiceWorker();
 
+// Public member-facing page (no staff login): /live
+const isLiveRoute = /^\/live\/?$/.test(window.location.pathname);
+
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <ErrorBoundary>
-      <App />
+      {isLiveRoute ? <LiveServicePage /> : <App />}
       <PwaUpdateToast />
     </ErrorBoundary>
   </React.StrictMode>
