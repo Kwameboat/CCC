@@ -230,6 +230,93 @@ const CMSView: React.FC = () => {
               />
             </Card>
 
+            <Card
+              title="Hero photo slider"
+              action={
+                <button
+                  onClick={() =>
+                    update('hero', { ...content.hero, slides: [...content.hero.slides, { imageUrl: '', caption: '', subtitle: '' }] })
+                  }
+                  className="flex items-center gap-1 text-[11px] font-black uppercase text-gold-700"
+                >
+                  <Plus size={14} /> Add photo
+                </button>
+              }
+            >
+              <p className="text-[11px] text-slate-400">
+                Photos rotate beside the main heading. Use a link starting with https:// or a site image such as
+                /images/founder.jpg. Transparent PNG cut-outs look best.
+              </p>
+              {content.hero.slides.length === 0 && <p className="text-xs text-slate-400">No photos — the slider is hidden.</p>}
+              {content.hero.slides.map((sl, i) => {
+                const setSlide = (patch: Partial<typeof sl>) =>
+                  update('hero', {
+                    ...content.hero,
+                    slides: content.hero.slides.map((x, j) => (j === i ? { ...x, ...patch } : x)),
+                  });
+                const move = (dir: -1 | 1) => {
+                  const next = [...content.hero.slides];
+                  const j = i + dir;
+                  if (j < 0 || j >= next.length) return;
+                  [next[i], next[j]] = [next[j], next[i]];
+                  update('hero', { ...content.hero, slides: next });
+                };
+                return (
+                  <div key={i} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex gap-4">
+                    <div className="w-16 h-20 shrink-0 rounded-xl bg-slate-900 overflow-hidden flex items-center justify-center">
+                      {sl.imageUrl ? (
+                        <img src={sl.imageUrl} alt="" className="w-full h-full object-cover object-top" />
+                      ) : (
+                        <span className="text-[9px] text-slate-500 uppercase font-black">No image</span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <input
+                        className={inputCls}
+                        value={sl.imageUrl}
+                        placeholder="Image link"
+                        onChange={(e) => setSlide({ imageUrl: e.target.value })}
+                      />
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <input
+                          className={inputCls}
+                          value={sl.caption}
+                          placeholder="Caption, e.g. Our Founders"
+                          onChange={(e) => setSlide({ caption: e.target.value })}
+                        />
+                        <input
+                          className={inputCls}
+                          value={sl.subtitle}
+                          placeholder="Names (optional)"
+                          onChange={(e) => setSlide({ subtitle: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1 shrink-0">
+                      <button onClick={() => move(-1)} disabled={i === 0} className="px-2 py-1 text-xs text-slate-400 hover:text-slate-700 disabled:opacity-30" aria-label="Move up">
+                        ▲
+                      </button>
+                      <button
+                        onClick={() => move(1)}
+                        disabled={i === content.hero.slides.length - 1}
+                        className="px-2 py-1 text-xs text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                        aria-label="Move down"
+                      >
+                        ▼
+                      </button>
+                      <button
+                        onClick={() => update('hero', { ...content.hero, slides: content.hero.slides.filter((_, j) => j !== i) })}
+                        className="p-1 text-slate-400 hover:text-rose-600"
+                        aria-label="Remove photo"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </Card>
+
             <Card title="Welcome">
               <Field label="Heading" value={content.welcome.title} onChange={(v) => update('welcome', { ...content.welcome, title: v })} />
               <Field label="Text" multiline value={content.welcome.body} onChange={(v) => update('welcome', { ...content.welcome, body: v })} />

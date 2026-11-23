@@ -28,6 +28,7 @@ import { supabase, hasSupabaseConfig } from '../../lib/supabase';
 import { CHURCH_NAME, CHURCH_NAME_UPPER } from '../../lib/brand';
 import { DEFAULT_SITE_CONTENT, SiteContent, loadSiteContent, safeUrl, whatsappLink } from '../../lib/siteContent';
 import Logo from '../Logo';
+import HeroSlider from './HeroSlider';
 
 interface StreamLite {
   id: string;
@@ -250,7 +251,7 @@ const WebsitePage: React.FC = () => {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-4">
           <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-3 min-w-0" aria-label="Back to top">
-            <Logo size={38} hideText />
+            <Logo size={46} hideText />
             <span className="font-black text-xs sm:text-sm tracking-tight text-gold-500 truncate">{CHURCH_NAME_UPPER}</span>
           </button>
           <nav className="hidden xl:flex items-center gap-6">
@@ -307,7 +308,7 @@ const WebsitePage: React.FC = () => {
             <div className="absolute -bottom-40 -right-40 w-[60vw] h-[60vw] max-w-[800px] max-h-[800px] rounded-full bg-gold-900/40 blur-[140px]" />
           </div>
         )}
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-28 pb-20 w-full">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-28 pb-20 w-full grid gap-14 lg:gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] items-center">
           <div className="max-w-3xl">
             {live && (
               <a
@@ -319,7 +320,7 @@ const WebsitePage: React.FC = () => {
               </a>
             )}
             <div className="text-[11px] sm:text-xs font-black uppercase tracking-[0.4em] text-gold-400 mb-5">{c.hero.eyebrow}</div>
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.05]">{c.hero.title}</h1>
+            <h1 className="text-4xl sm:text-6xl xl:text-7xl font-black tracking-tight leading-[1.05]">{c.hero.title}</h1>
             <p className="mt-6 text-base sm:text-lg text-slate-300 max-w-2xl leading-relaxed">{c.hero.subtitle}</p>
             <div className="mt-10 flex flex-wrap gap-3">
               <WatchButton size="lg" />
@@ -340,6 +341,11 @@ const WebsitePage: React.FC = () => {
               </div>
             )}
           </div>
+          {c.hero.slides.length > 0 && (
+            <div className="px-2 sm:px-6 lg:px-0">
+              <HeroSlider slides={c.hero.slides} />
+            </div>
+          )}
         </div>
       </section>
 
@@ -744,7 +750,7 @@ const WebsitePage: React.FC = () => {
       <footer className="bg-slate-950 text-slate-400 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 grid gap-8 md:grid-cols-3 items-start">
           <div className="flex items-center gap-3">
-            <Logo size={44} hideText />
+            <Logo size={52} hideText />
             <div>
               <div className="font-black text-sm text-gold-500">{CHURCH_NAME_UPPER}</div>
               <div className="text-xs">{c.location.address}</div>

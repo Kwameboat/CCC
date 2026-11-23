@@ -278,7 +278,7 @@ const LiveServicePage: React.FC = () => {
       <header className="sticky top-0 z-30 bg-black/80 backdrop-blur border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <Logo size={36} hideText />
+            <Logo size={44} hideText />
             <div className="min-w-0">
               <div className="font-black text-xs sm:text-sm tracking-tight text-gold-500 truncate">{CHURCH_NAME_UPPER}</div>
               <div className="text-[10px] uppercase tracking-[0.3em] text-slate-400">Online Church</div>
