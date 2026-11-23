@@ -72,14 +72,14 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex items-center justify-between h-16 sm:h-20 px-4 bg-slate-950 border-b border-white/5 shrink-0">
         {showLabels ? (
           <div className="flex items-center gap-3 overflow-hidden min-w-0">
-            <Logo size={36} hideText={true} className="flex-shrink-0" />
+            <Logo size={44} hideText={true} className="flex-shrink-0" />
             <span className="font-black text-[11px] sm:text-sm tracking-tighter whitespace-nowrap uppercase text-gold-500 truncate leading-tight">
               {CHURCH_NAME_UPPER}
             </span>
           </div>
         ) : (
           <div className="mx-auto hidden lg:block">
-            <Logo size={32} hideText={true} />
+            <Logo size={40} hideText={true} />
           </div>
         )}
         <button

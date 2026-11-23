@@ -11,13 +11,18 @@ export interface TitledText {
   title: string;
   body: string;
 }
+export interface HeroSlide {
+  imageUrl: string;
+  caption: string;
+  subtitle: string;
+}
 export interface GiveMethod {
   label: string;
   details: string;
 }
 
 export interface SiteContent {
-  hero: { eyebrow: string; title: string; subtitle: string; imageUrl: string };
+  hero: { eyebrow: string; title: string; subtitle: string; imageUrl: string; slides: HeroSlide[] };
   welcome: { title: string; body: string };
   serviceTimes: ServiceTime[];
   location: { address: string; mapQuery: string; directions: string };
@@ -36,6 +41,10 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     title: CHURCH_NAME,
     subtitle: 'A family of believers growing in grace, rooted in the Word and reaching our city with the love of Christ.',
     imageUrl: '',
+    slides: [
+      { imageUrl: '/images/founders.png', caption: 'Our Founders', subtitle: '' },
+      { imageUrl: '/images/founder.jpg', caption: 'Our Founder', subtitle: '' },
+    ],
   },
   welcome: {
     title: 'You belong here',
@@ -93,10 +102,12 @@ export const loadSiteContent = async (): Promise<{ content: SiteContent; error: 
   return { content: mergeSiteContent(data?.content), error: null };
 };
 
-/** Only allow https links (or mailto/tel built by us) in user-editable content. */
+/** Only allow https links, or images hosted on this site (/images/…), in user-editable content. */
 export const safeUrl = (raw: string): string | null => {
+  const v = raw.trim();
+  if (/^\/(?!\/)[A-Za-z0-9/_.-]+$/.test(v)) return v;
   try {
-    const u = new URL(raw.trim());
+    const u = new URL(v);
     return u.protocol === 'https:' ? u.toString() : null;
   } catch {
     return null;
