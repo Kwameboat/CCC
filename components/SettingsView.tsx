@@ -55,7 +55,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     setDbStatus({
       connected: isConnected,
       tables: isConnected
-        ? ['branches', 'profiles', 'members', 'services', 'attendance', 'attendance_alerts', 'counseling', 'transactions', 'pledges', 'sermons', 'events', 'products', 'broadcasts', 'live_streams', 'live_chat_messages', 'site_content', 'contact_messages']
+        ? ['branches', 'profiles', 'members', 'services', 'attendance', 'attendance_alerts', 'counseling', 'transactions', 'pledges', 'sermons', 'events', 'products', 'broadcasts', 'live_streams', 'live_chat_messages', 'site_content', 'contact_messages', 'streaming_settings']
         : [],
     });
   };

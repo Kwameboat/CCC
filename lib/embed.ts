@@ -4,11 +4,13 @@
  * Vimeo (videos and live events) and Facebook videos. Returns null when the
  * link can't be embedded — callers should then show an "open stream" link.
  */
-export type StreamProvider = 'youtube' | 'vimeo' | 'facebook' | 'unknown';
+export type StreamProvider = 'youtube' | 'vimeo' | 'facebook' | 'hls' | 'unknown';
 
 export interface StreamEmbed {
   provider: StreamProvider;
   embedUrl: string | null;
+  /** Set for streams from the church streaming server — play with <HlsPlayer>. */
+  hlsUrl?: string;
 }
 
 const YT_ID = /^[A-Za-z0-9_-]{11}$/;
@@ -21,6 +23,11 @@ export const parseStreamUrl = (raw: string, opts: { autoplay?: boolean } = {}): 
     return { provider: 'unknown', embedUrl: null };
   }
   if (url.protocol !== 'https:') return { provider: 'unknown', embedUrl: null };
+
+  // ---- Church streaming server (HLS)
+  if (/\.m3u8$/i.test(url.pathname)) {
+    return { provider: 'hls', embedUrl: null, hlsUrl: url.toString() };
+  }
 
   const host = url.hostname.replace(/^www\.|^m\./, '').toLowerCase();
   const parts = url.pathname.split('/').filter(Boolean);
@@ -74,4 +81,24 @@ export const parseStreamUrl = (raw: string, opts: { autoplay?: boolean } = {}): 
 };
 
 export const providerLabel = (p: StreamProvider): string =>
-  p === 'youtube' ? 'YouTube' : p === 'vimeo' ? 'Vimeo' : p === 'facebook' ? 'Facebook' : 'External';
+  p === 'youtube'
+    ? 'YouTube'
+    : p === 'vimeo'
+      ? 'Vimeo'
+      : p === 'facebook'
+        ? 'Facebook'
+        : p === 'hls'
+          ? 'Church streaming server'
+          : 'External';
+
+/** Build the HLS address for a path on the church streaming server. */
+export const churchStreamUrl = (webUrl: string, path = 'live'): string | null => {
+  try {
+    const u = new URL(webUrl.trim());
+    if (u.protocol !== 'https:') return null;
+    const clean = path.replace(/[^A-Za-z0-9_-]/g, '') || 'live';
+    return `${u.origin}/${clean}/index.m3u8`;
+  } catch {
+    return null;
+  }
+};

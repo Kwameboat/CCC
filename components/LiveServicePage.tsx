@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Radio, CalendarClock, PlayCircle, Send, Loader2, CheckCircle2, ExternalLink, Users, MessageCircle } from 'lucide-react';
 import { supabase, hasSupabaseConfig } from '../lib/supabase';
 import { parseStreamUrl } from '../lib/embed';
+import HlsPlayer from './HlsPlayer';
 import { CHURCH_NAME, CHURCH_NAME_UPPER } from '../lib/brand';
 import Logo from './Logo';
 
@@ -70,8 +71,9 @@ const useCountdown = (target: string | null) => {
   return { days: Math.floor(s / 86400), hours: Math.floor((s % 86400) / 3600), minutes: Math.floor((s % 3600) / 60), seconds: s % 60, done: diff === 0 };
 };
 
-const Player: React.FC<{ url: string; title: string; autoplay?: boolean }> = ({ url, title, autoplay }) => {
+const Player: React.FC<{ url: string; title: string; autoplay?: boolean; live?: boolean }> = ({ url, title, autoplay, live }) => {
   const embed = parseStreamUrl(url, { autoplay });
+  if (embed.hlsUrl) return <HlsPlayer src={embed.hlsUrl} title={title} autoplay={autoplay} live={live} />;
   if (!embed.embedUrl) {
     return (
       <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-center p-6">
@@ -160,7 +162,8 @@ const LiveServicePage: React.FC = () => {
 
   const live = streams.filter((s) => s.status === 'live');
   const upcoming = streams.filter((s) => s.status === 'scheduled');
-  const replays = streams.filter((s) => s.status === 'ended');
+  // Replays need a link that still works after the broadcast (server streams end with the broadcast)
+  const replays = streams.filter((s) => s.status === 'ended' && parseStreamUrl(s.replay_url || s.stream_url).provider !== 'hls');
   const [activeLiveId, setActiveLiveId] = useState<string | null>(null);
   const current = live.find((s) => s.id === activeLiveId) || live[0] || null;
   const replay = replays.find((s) => s.id === replayId) || null;
@@ -264,8 +267,8 @@ const LiveServicePage: React.FC = () => {
   };
 
   const featured = useMemo(() => {
-    if (current) return { url: current.stream_url, title: current.title, autoplay: true };
-    if (replay) return { url: replay.replay_url || replay.stream_url, title: replay.title, autoplay: true };
+    if (current) return { url: current.stream_url, title: current.title, autoplay: true, live: true };
+    if (replay) return { url: replay.replay_url || replay.stream_url, title: replay.title, autoplay: true, live: false };
     return null;
   }, [current?.id, replay?.id]);
 
@@ -325,7 +328,7 @@ const LiveServicePage: React.FC = () => {
               <div className="lg:col-span-2 space-y-4">
                 <div className="aspect-video rounded-3xl overflow-hidden bg-slate-950 border border-white/10 shadow-[0_32px_64px_-16px_rgba(197,146,53,0.25)]">
                   {featured ? (
-                    <Player key={featured.url} url={featured.url} title={featured.title} autoplay={featured.autoplay} />
+                    <Player key={featured.url} url={featured.url} title={featured.title} autoplay={featured.autoplay} live={featured.live} />
                   ) : next && countdown ? (
                     <div className="w-full h-full flex flex-col items-center justify-center text-center p-6 bg-[radial-gradient(circle_at_50%_0%,rgba(197,146,53,0.35),transparent_60%)]">
                       <div className="text-[10px] font-black uppercase tracking-[0.4em] text-gold-400 mb-3">Next service</div>

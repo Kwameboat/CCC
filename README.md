@@ -18,6 +18,7 @@ Production church management console for Charis Christian Center.
 | Store / Sermons / Events | Supabase CRUD |
 | Communication | Audience targeting + broadcast queue (+ optional `broadcasts` table) |
 | Online Service | Schedule & go live with YouTube/Facebook/Vimeo streams, chat moderation, online attendance |
+| Church streaming server | Free self-hosted live video (MediaMTX on Oracle Always Free) played in the app's own player — see [`streaming-server/README.md`](streaming-server/README.md) |
 | Member live page | Public `/live` page: watch live, countdown, join (counted in attendance), live chat, replays |
 | Church website | Public site at `/` (Watch Live button, services, about, ministries, events, messages, give, prayer/contact form). Edited in Console → Website; staff console lives at `/console` |
 | Settings | Deploy checklist, schema health, campus registration, RBAC docs |
@@ -25,9 +26,9 @@ Production church management console for Charis Christian Center.
 ## Production setup (required)
 
 1. **Supabase**
-   - **New project:** paste [`supabase/setup_all.sql`](supabase/setup_all.sql) into the SQL Editor and Run (it is schema + 002–009 in one file).
+   - **New project:** paste [`supabase/setup_all.sql`](supabase/setup_all.sql) into the SQL Editor and Run (it is schema + 002–010 in one file).
    - Existing project: in the SQL Editor run, in order: [`supabase/schema.sql`](supabase/schema.sql), then
-     `supabase/migrations/002` → `009`. **`006_security_hardening.sql` is required** — it
+     `supabase/migrations/002` → `010`. **`006_security_hardening.sql` is required** — it
      enforces role-based access in the database.
    - The first account to sign up becomes admin. Later signups get an *inactive viewer*
      profile until an admin activates them in Settings → Staff.

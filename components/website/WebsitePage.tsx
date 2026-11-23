@@ -36,6 +36,8 @@ interface StreamLite {
   status: 'scheduled' | 'live' | 'ended';
   scheduled_at: string;
   started_at: string | null;
+  stream_url?: string;
+  replay_url?: string | null;
 }
 interface EventLite {
   id: string;
@@ -131,14 +133,18 @@ const WebsitePage: React.FC = () => {
         .limit(1),
       supabase
         .from('live_streams')
-        .select('id,title,preacher,status,scheduled_at,started_at')
+        .select('id,title,preacher,status,scheduled_at,started_at,stream_url,replay_url')
         .eq('status', 'ended')
         .order('scheduled_at', { ascending: false })
-        .limit(3),
+        .limit(6),
     ]);
     setLive((liveRes.data?.[0] as StreamLite) || null);
     setNextStream((nextRes.data?.[0] as StreamLite) || null);
-    setReplays((pastRes.data || []) as StreamLite[]);
+    setReplays(
+      ((pastRes.data || []) as StreamLite[])
+        .filter((r) => !/\.m3u8(\?|$)/i.test(r.replay_url || r.stream_url || ''))
+        .slice(0, 3)
+    );
   };
 
   useEffect(() => {
