@@ -123,13 +123,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                 ? 'bg-gold-950 border-gold-500 text-gold-500'
                 : 'border-slate-800 text-slate-600 hover:border-gold-700 hover:text-gold-600'
             } ${!showLabels ? 'lg:justify-center' : ''}`}
-            title="Portal CMS"
+            title="Church website"
           >
             <Lock
               size={18}
               className={`shrink-0 ${currentView === 'cms' ? 'text-gold-500' : 'text-slate-600 group-hover:text-gold-600'}`}
             />
-            {showLabels && <span className="font-black text-[9px] uppercase tracking-widest">Portal CMS</span>}
+            {showLabels && <span className="font-black text-[9px] uppercase tracking-widest">Website</span>}
           </button>
         </div>
       )}

@@ -15,7 +15,7 @@ export const APP_MODULES: { id: AppModule; label: string; description: string }[
   { id: 'events', label: 'Events', description: 'Programs & calendar' },
   { id: 'online', label: 'Online Service', description: 'Livestream & online church' },
   { id: 'communication', label: 'Broadcast', description: 'Member messaging' },
-  { id: 'cms', label: 'CMS Portal', description: 'Website pages' },
+  { id: 'cms', label: 'Website', description: 'Public website & inbox' },
   { id: 'settings', label: 'Settings', description: 'Admin & staff control' },
 ];
 
