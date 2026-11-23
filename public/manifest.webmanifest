@@ -1,15 +1,19 @@
 {
   "name": "Charis Christian Center",
   "short_name": "Charis CC",
-  "description": "Church management console for Charis Christian Center — members, attendance, finance, and more.",
-  "start_url": "/",
+  "description": "Staff console for Charis Christian Center — members, attendance, finance, online services and the church website.",
+  "start_url": "/console",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#050505",
   "theme_color": "#050505",
   "lang": "en",
-  "categories": ["business", "productivity", "religion"],
+  "categories": [
+    "business",
+    "productivity",
+    "religion"
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -32,16 +36,16 @@
   ],
   "shortcuts": [
     {
-      "name": "Attendance",
-      "short_name": "Attendance",
-      "url": "/?view=attendance",
-      "description": "Open service attendance"
+      "name": "Online Service",
+      "short_name": "Online",
+      "url": "/console",
+      "description": "Open the staff console"
     },
     {
-      "name": "Finance",
-      "short_name": "Finance",
-      "url": "/?view=finance",
-      "description": "Open treasury"
+      "name": "Church website",
+      "short_name": "Website",
+      "url": "/",
+      "description": "Open the public church website"
     }
   ]
 }

@@ -75,7 +75,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
     setIsProcessing(true);
     setError('');
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin,
+      redirectTo: `${window.location.origin}/console`,
     });
     setIsProcessing(false);
     if (resetError) {
