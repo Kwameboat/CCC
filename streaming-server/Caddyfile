@@ -1,0 +1,4 @@
+# Free HTTPS certificate from Let's Encrypt, renewed automatically.
+{$STREAM_DOMAIN} {
+	reverse_proxy mediamtx:8888
+}

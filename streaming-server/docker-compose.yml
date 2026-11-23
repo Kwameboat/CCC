@@ -1,0 +1,32 @@
+# Church streaming server: MediaMTX (RTMP in, HLS out) behind Caddy (free automatic HTTPS).
+# Started by setup.sh — see README.md.
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:1.21.3
+    restart: unless-stopped
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml:ro
+      - ./recordings:/recordings
+    ports:
+      - "1935:1935" # RTMP ingest from OBS / encoder
+    expose:
+      - "8888" # HLS, reachable only through Caddy
+
+  caddy:
+    image: caddy:2.11.9
+    restart: unless-stopped
+    environment:
+      - STREAM_DOMAIN=${STREAM_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - mediamtx
+
+volumes:
+  caddy_data:
+  caddy_config:

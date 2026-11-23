@@ -1,0 +1,67 @@
+# Charis Christian Center — church streaming server (MediaMTX v1.21)
+# Receives the broadcast from OBS / an encoder / a phone app over RTMP and serves it to the
+# church app as HLS. Anything not listed here keeps MediaMTX's default value.
+#
+# setup.sh replaces __PUBLISH_PASSWORD__ with your own password. Never commit the real one.
+
+logLevel: info
+
+# --- Who may do what -------------------------------------------------------
+authMethod: internal
+authInternalUsers:
+  # Anyone may WATCH (members on the website / app).
+  - user: any
+    pass:
+    ips: []
+    permissions:
+      - action: read
+        path:
+  # Only the media team may BROADCAST.
+  - user: publisher
+    pass: __PUBLISH_PASSWORD__
+    ips: []
+    permissions:
+      - action: publish
+        path:
+  # Local admin tools only.
+  - user: any
+    pass:
+    ips: ["127.0.0.1", "::1"]
+    permissions:
+      - action: api
+      - action: metrics
+      - action: playback
+
+# --- Protocols ---------------------------------------------------------------
+# RTMP in (OBS, vMix, ATEM, Larix Broadcaster, etc.)
+rtmp: true
+rtmpAddress: :1935
+
+# HLS out (played by the church app). Caddy puts HTTPS in front of this.
+hls: true
+hlsAddress: :8888
+hlsAllowOrigins: ["*"]
+hlsVariant: lowLatency
+hlsAlwaysRemux: true
+hlsTrustedProxies: ["172.16.0.0/12", "10.0.0.0/8"]
+
+# Not needed — keep the attack surface small.
+rtsp: false
+webrtc: false
+srt: false
+api: false
+metrics: false
+pprof: false
+playback: false
+
+# --- Recording (every service is saved on the server) ------------------------
+pathDefaults:
+  record: true
+  recordPath: ./recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+  recordFormat: fmp4
+  recordSegmentDuration: 1h
+  # Keep recordings for 14 days, then delete them to save disk space.
+  recordDeleteAfter: 336h
+
+paths:
+  all_others:

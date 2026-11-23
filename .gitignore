@@ -27,3 +27,6 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Streaming server runtime files
+streaming-server/recordings/

@@ -17,10 +17,14 @@ import {
   CalendarClock,
   Globe,
   Lock,
+  Server,
+  Save,
+  ChevronDown,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { showToast } from '../lib/toast';
-import { parseStreamUrl, providerLabel } from '../lib/embed';
+import { parseStreamUrl, providerLabel, churchStreamUrl } from '../lib/embed';
+import HlsPlayer from './HlsPlayer';
 
 export interface LiveStream {
   id: string;
@@ -67,7 +71,14 @@ const defaultSchedule = () => {
   return toLocalInput(d.toISOString());
 };
 
+interface ServerSettings {
+  web_url: string;
+  rtmp_url: string;
+  stream_path: string;
+}
+
 const emptyForm = () => ({
+  source: 'link' as 'server' | 'link',
   title: '',
   preacher: '',
   description: '',
@@ -100,6 +111,71 @@ const OnlineServiceView: React.FC<OnlineServiceViewProps> = ({ branchId, branchN
   const [joinCount, setJoinCount] = useState<number | null>(null);
 
   const publicLink = `${window.location.origin}/live`;
+
+  // ---- Church streaming server settings
+  const [server, setServer] = useState<ServerSettings>({ web_url: '', rtmp_url: '', stream_path: 'live' });
+  const [serverAvailable, setServerAvailable] = useState(true);
+  const [serverOpen, setServerOpen] = useState(false);
+  const [serverSaving, setServerSaving] = useState(false);
+  const serverStreamUrl = server.web_url ? churchStreamUrl(server.web_url, server.stream_path) : null;
+
+  useEffect(() => {
+    supabase
+      .from('streaming_settings')
+      .select('web_url, rtmp_url, stream_path')
+      .eq('id', 'main')
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error) {
+          setServerAvailable(false);
+          return;
+        }
+        if (data) {
+          setServer({ web_url: data.web_url || '', rtmp_url: data.rtmp_url || '', stream_path: data.stream_path || 'live' });
+          if (!data.web_url) setServerOpen(true);
+        }
+      });
+  }, []);
+
+  const saveServer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const web = server.web_url.trim().replace(/\/+$/, '');
+    const rtmp = server.rtmp_url.trim().replace(/\/+$/, '');
+    if (web && !/^https:\/\/[^/\s]+$/i.test(web)) {
+      showToast('Server web address must look like https://live.yourchurch.org', 'error');
+      return;
+    }
+    if (rtmp && !/^rtmps?:\/\/[^/\s]+(:\d+)?$/i.test(rtmp)) {
+      showToast('RTMP address must look like rtmp://live.yourchurch.org:1935', 'error');
+      return;
+    }
+    setServerSaving(true);
+    const { data: auth } = await supabase.auth.getUser();
+    const { error } = await supabase.from('streaming_settings').upsert({
+      id: 'main',
+      web_url: web || null,
+      rtmp_url: rtmp || null,
+      stream_path: server.stream_path || 'live',
+      updated_at: new Date().toISOString(),
+      updated_by: auth.user?.id || null,
+    });
+    setServerSaving(false);
+    if (error) {
+      showToast(error.message, 'error');
+      return;
+    }
+    setServer({ ...server, web_url: web, rtmp_url: rtmp });
+    showToast('Streaming server saved.', 'success');
+  };
+
+  const copyText = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast(`${label} copied.`, 'success');
+    } catch {
+      showToast(text, 'info');
+    }
+  };
 
   const fetchStreams = async () => {
     if (!branchId) return;
@@ -185,13 +261,14 @@ const OnlineServiceView: React.FC<OnlineServiceViewProps> = ({ branchId, branchN
 
   const openCreate = () => {
     setEditing(null);
-    setForm(emptyForm());
+    setForm({ ...emptyForm(), source: serverStreamUrl ? 'server' : 'link', streamUrl: serverStreamUrl || '' });
     setModalOpen(true);
   };
 
   const openEdit = (s: LiveStream) => {
     setEditing(s);
     setForm({
+      source: parseStreamUrl(s.stream_url).provider === 'hls' ? 'server' : 'link',
       title: s.title,
       preacher: s.preacher || '',
       description: s.description || '',
@@ -207,7 +284,11 @@ const OnlineServiceView: React.FC<OnlineServiceViewProps> = ({ branchId, branchN
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!/^https:\/\//i.test(form.streamUrl.trim())) {
+    if (form.source === 'server' && !serverStreamUrl) {
+      showToast('Set up the streaming server first (Online Service → Streaming server).', 'error');
+      return;
+    }
+    if (form.source === 'link' && !/^https:\/\//i.test(form.streamUrl.trim())) {
       showToast('Stream link must start with https://', 'error');
       return;
     }
@@ -217,7 +298,7 @@ const OnlineServiceView: React.FC<OnlineServiceViewProps> = ({ branchId, branchN
       title: form.title.trim(),
       preacher: form.preacher.trim() || null,
       description: form.description.trim() || null,
-      stream_url: form.streamUrl.trim(),
+      stream_url: form.source === 'server' ? serverStreamUrl! : form.streamUrl.trim(),
       scheduled_at: new Date(form.scheduledAt).toISOString(),
       is_public: form.isPublic,
       chat_enabled: form.chatEnabled,
@@ -280,7 +361,12 @@ const OnlineServiceView: React.FC<OnlineServiceViewProps> = ({ branchId, branchN
     setBusyId(s.id);
     const { error } = await supabase
       .from('live_streams')
-      .update({ status: 'ended', ended_at: new Date().toISOString(), replay_url: s.replay_url || s.stream_url })
+      .update({
+        status: 'ended',
+        ended_at: new Date().toISOString(),
+        // Server streams aren't kept online after the broadcast (recordings stay on the server)
+        replay_url: s.replay_url || (parseStreamUrl(s.stream_url).provider === 'hls' ? null : s.stream_url),
+      })
       .eq('id', s.id);
     if (!error && s.service_id) {
       await supabase
@@ -367,6 +453,96 @@ const OnlineServiceView: React.FC<OnlineServiceViewProps> = ({ branchId, branchN
           </button>
         </div>
       </div>
+
+      {/* Church streaming server */}
+      {serverAvailable && (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setServerOpen((o) => !o)}
+            className="w-full px-5 py-4 flex items-center justify-between gap-3 text-left"
+            aria-expanded={serverOpen}
+          >
+            <span className="flex items-center gap-3 min-w-0">
+              <Server size={20} className={server.web_url ? 'text-emerald-600' : 'text-slate-400'} />
+              <span className="min-w-0">
+                <span className="block text-xs font-black uppercase tracking-widest text-slate-600">Streaming server</span>
+                <span className="block text-xs text-slate-500 truncate">
+                  {server.web_url ? `Connected: ${server.web_url}` : 'Not set up — stream inside the app for free with your own server'}
+                </span>
+              </span>
+            </span>
+            <ChevronDown size={18} className={`shrink-0 text-slate-400 transition-transform ${serverOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {serverOpen && (
+            <div className="px-5 pb-5 grid gap-6 lg:grid-cols-2 border-t border-slate-100 pt-5">
+              <form onSubmit={saveServer} className="space-y-3">
+                <p className="text-xs text-slate-500">
+                  Set up the free server with <code className="font-bold">streaming-server/README.md</code> in the repository, then
+                  enter the addresses its setup script prints.
+                </p>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Server web address</label>
+                  <input
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm"
+                    placeholder="https://live.yourchurch.org"
+                    value={server.web_url}
+                    onChange={(e) => setServer({ ...server, web_url: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Server RTMP address</label>
+                  <input
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm"
+                    placeholder="rtmp://live.yourchurch.org:1935"
+                    value={server.rtmp_url}
+                    onChange={(e) => setServer({ ...server, rtmp_url: e.target.value })}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={serverSaving}
+                  className="flex items-center gap-2 px-4 py-2 bg-gold-500 text-black rounded-xl text-xs font-black uppercase tracking-widest disabled:opacity-60"
+                >
+                  {serverSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save
+                </button>
+              </form>
+              <div className="rounded-2xl bg-slate-950 text-slate-200 p-5 text-sm space-y-3">
+                <div className="text-[10px] font-black uppercase tracking-widest text-gold-400">OBS settings (Settings → Stream → Custom)</div>
+                {server.rtmp_url ? (
+                  <>
+                    {[
+                      ['Server', server.rtmp_url],
+                      ['Stream key', `${server.stream_path || 'live'}?user=publisher&pass=YOUR-BROADCAST-PASSWORD`],
+                    ].map(([label, value]) => (
+                      <div key={label}>
+                        <div className="text-[10px] uppercase tracking-widest text-slate-500">{label}</div>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 min-w-0 break-all text-gold-200">{value}</code>
+                          <button
+                            type="button"
+                            onClick={() => copyText(value, label)}
+                            className="p-1.5 rounded-md bg-white/10 hover:bg-white/20"
+                            aria-label={`Copy ${label}`}
+                          >
+                            <Copy size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    <p className="text-[11px] text-slate-400">
+                      Replace YOUR-BROADCAST-PASSWORD with the password chosen during server setup. Suggested: 720p, 30 fps,
+                      2500–3500 Kbps, keyframe interval 1 s.
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-slate-400 text-xs">Save the RTMP address to see the settings for your media team.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Status cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -477,7 +653,9 @@ const OnlineServiceView: React.FC<OnlineServiceViewProps> = ({ branchId, branchN
         <div className="xl:col-span-3 space-y-6">
           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="aspect-video bg-slate-950 flex items-center justify-center">
-              {selected && selectedEmbed?.embedUrl ? (
+              {selected && selectedEmbed?.hlsUrl ? (
+                <HlsPlayer key={selected.id} src={selectedEmbed.hlsUrl} title={selected.title} live={selected.status !== 'ended'} />
+              ) : selected && selectedEmbed?.embedUrl ? (
                 <iframe
                   key={selected.id}
                   src={selectedEmbed.embedUrl}
@@ -572,23 +750,60 @@ const OnlineServiceView: React.FC<OnlineServiceViewProps> = ({ branchId, branchN
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Live stream link</label>
-                <input
-                  required
-                  type="url"
-                  placeholder="https://www.youtube.com/live/…"
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm"
-                  value={form.streamUrl}
-                  onChange={(e) => setForm({ ...form, streamUrl: e.target.value })}
-                />
-                <p className={`mt-1 text-[11px] ${formEmbed && !formEmbed.embedUrl ? 'text-amber-600' : 'text-slate-400'}`}>
-                  {formEmbed
-                    ? formEmbed.embedUrl
-                      ? `${providerLabel(formEmbed.provider)} link — will play inside the member page.`
-                      : 'This link will open in a new tab instead of playing inside the page.'
-                    : 'Paste the YouTube, Facebook or Vimeo live link (or your YouTube channel “/live” link).'}
-                </p>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Video source</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(
+                    [
+                      ['server', 'Church streaming server'],
+                      ['link', 'YouTube / Facebook / Vimeo'],
+                    ] as const
+                  ).map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setForm({ ...form, source: id })}
+                      className={`py-2.5 px-2 rounded-xl border text-[10px] font-black uppercase tracking-widest ${
+                        form.source === id ? 'bg-gold-500 text-black border-gold-500' : 'bg-white text-slate-500 border-slate-200'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
+              {form.source === 'server' ? (
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                  {serverStreamUrl ? (
+                    <>
+                      <div className="font-bold text-slate-700">Plays in the church app’s own player — no third-party app.</div>
+                      <div className="mt-1 text-slate-500 break-all">{serverStreamUrl}</div>
+                    </>
+                  ) : (
+                    <div className="text-amber-700 font-bold">
+                      Set up the streaming server first (the “Streaming server” panel on this page).
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Live stream link</label>
+                  <input
+                    required
+                    type="url"
+                    placeholder="https://www.youtube.com/live/…"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm"
+                    value={form.streamUrl}
+                    onChange={(e) => setForm({ ...form, streamUrl: e.target.value })}
+                  />
+                  <p className={`mt-1 text-[11px] ${formEmbed && !formEmbed.embedUrl && !formEmbed.hlsUrl ? 'text-amber-600' : 'text-slate-400'}`}>
+                    {formEmbed
+                      ? formEmbed.embedUrl || formEmbed.hlsUrl
+                        ? `${providerLabel(formEmbed.provider)} — will play inside the member page.`
+                        : 'This link will open in a new tab instead of playing inside the page.'
+                      : 'Paste the YouTube, Facebook or Vimeo live link (or your YouTube channel “/live” link).'}
+                  </p>
+                </div>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Starts</label>
